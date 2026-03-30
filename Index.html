@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; }
+    .view-section { display: none; }
+    .view-section.active { display: block; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .spinner { border: 3px solid #e2e8f0; border-top: 3px solid #3b82f6; border-radius: 50%; width: 18px; height: 18px; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle; margin-right: 6px; }
+    .btn-loading { pointer-events: none; opacity: 0.6; }
+    select:focus, input[type="text"]:focus, textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .timeline-line { position: relative; }
+    .timeline-line::before { content: ''; position: absolute; left: 15px; top: 32px; bottom: 0; width: 2px; background: #e2e8f0; }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen pb-16">
+
+  <nav class="bg-white border-b sticky top-0 z-30 shadow-sm">
+    <div class="max-w-5xl mx-auto px-6 h-16 flex justify-between items-center">
+      <span class="font-black text-blue-600 text-xl tracking-tight">TERM WORKFLOW</span>
+      <div class="flex bg-slate-100 p-1 rounded-xl gap-1">
+        <button onclick="switchView('apply')"  id="nav-apply"  class="nav-btn">主管送件</button>
+        <button onclick="switchView('search')" id="nav-search" class="nav-btn">案件查詢</button>
+        <button onclick="loadHRDashboard()"    id="nav-hr"     class="nav-btn">人資後台</button>
+      </div>
+    </div>
+  </nav>
+
+  <style>
+    .nav-btn { padding: 8px 20px; border-radius: 10px; font-size: 14px; font-weight: 700; color: #64748b; transition: all 0.15s; cursor: pointer; background: transparent; border: none; }
+    .active-btn { background: white; color: #2563eb; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  </style>
+
+  <main class="max-w-4xl mx-auto p-6 mt-4">
+
+    <!-- 主管送件 -->
+    <section id="view-apply" class="view-section">
+      <div class="bg-white p-8 rounded-3xl shadow-sm border space-y-6">
+        <h2 class="text-2xl font-bold flex items-center gap-3">
+          <span class="w-1.5 h-8 bg-blue-600 rounded-full block"></span>
+          第一階段：發起資遣申請需求
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-slate-400 uppercase tracking-wide">公司全稱</label>
+            <input type="text" id="f-company" placeholder="例如：汶和有限公司" class="w-full border border-slate-200 p-3 rounded-xl bg-slate-50">
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-slate-400 uppercase tracking-wide">單位</label>
+            <input type="text" id="f-unit" placeholder="例如：業務部" class="w-full border border-slate-200 p-3 rounded-xl bg-slate-50">
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-slate-400 uppercase tracking-wide">申請主管姓名</label>
+            <input type="text" id="f-applicant" class="w-full border border-slate-200 p-3 rounded-xl bg-slate-50">
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-slate-400 uppercase tracking-wide">被資遣員工姓名</label>
+            <input type="text" id="f-employee" class="w-full border border-slate-200 p-3 rounded-xl bg-slate-50">
+          </div>
+        </div>
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-slate-400 uppercase tracking-wide">資遣原因</label>
+          <select id="f-reason" onchange="updateUploadHint(this.value)" class="w-full border border-slate-200 p-3 rounded-xl bg-slate-50">
+            <option value="">請選擇原因...</option>
+            <option value="不適任">不適任 (勞基法11-5)</option>
+            <option value="組織調整">組織調整 (勞基法11-4)</option>
+            <option value="協議離職評估">協議離職評估</option>
+          </select>
+        </div>
+        <div class="p-6 border-2 border-dashed border-blue-100 rounded-2xl bg-blue-50/30 space-y-3">
+          <div id="uploadHint" class="text-sm text-slate-500 font-medium text-center">請先選擇資遣原因，系統將提示必要附件</div>
+          <input type="file" id="fileInput" class="block text-sm text-slate-400 mx-auto mt-2">
+        </div>
+        <button id="btnApply" onclick="submitApply()" class="w-full bg-blue-600 text-white p-4 rounded-xl font-bold shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all">
+          確認送出申請需求
+        </button>
+      </div>
+    </section>
+
+    <!-- 案件查詢 -->
+    <section id="view-search" class="view-section space-y-6">
+      <div class="bg-white p-6 rounded-2xl shadow-sm border flex gap-3">
+        <input type="text" id="searchId" placeholder="輸入案件編號 (例如: TERM-20260328-001)"
+          class="flex-1 border border-slate-200 p-3 rounded-xl"
+          onkeydown="if(event.key==='Enter') queryCase()">
+        <button onclick="queryCase()" class="bg-slate-900 text-white px-8 rounded-xl font-bold hover:bg-black transition-all">搜尋</button>
+      </div>
+      <div id="queryResult">
+        <div class="py-20 text-center text-slate-300 font-bold border-2 border-dashed rounded-3xl">請輸入案件編號進行查詢</div>
+      </div>
+    </section>
+
+    <!-- 人資後台 -->
+    <section id="view-hr" class="view-section space-y-6">
+      <div class="bg-white p-8 rounded-3xl shadow-sm border">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold text-slate-800">人資後台｜進行中案件</h2>
+          <button onclick="loadHRDashboard()" class="text-blue-600 text-sm font-bold hover:text-blue-800 transition-colors">↻ 刷新清單</button>
+        </div>
+        <div class="flex flex-wrap gap-2 mb-6" id="filterTabs"></div>
+        <div id="hrDashboard"><div class="py-20 text-center text-slate-300 font-bold">載入中...</div></div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+  var currentView = 'apply';
+  var allCases = [];
+  var currentFilter = 'all';
+
+  var STATUS_CONFIG = {
+    'all':      { label: '全部',    color: 'bg-slate-100 text-slate-700', active: 'bg-slate-700 text-white' },
+    '待人資回覆': { label: '待人資回覆', color: 'bg-amber-100 text-amber-700',  active: 'bg-amber-500 text-white' },
+    '待主管確認': { label: '待主管確認', color: 'bg-indigo-100 text-indigo-700', active: 'bg-indigo-500 text-white' },
+    '待老闆同意': { label: '待老闆同意', color: 'bg-rose-100 text-rose-700',    active: 'bg-rose-500 text-white' },
+    '待人資執行': { label: '待人資執行', color: 'bg-emerald-100 text-emerald-700', active: 'bg-emerald-500 text-white' },
+    '已結案':    { label: '已結案',  color: 'bg-slate-100 text-slate-500',  active: 'bg-slate-400 text-white' }
+  };
+
+  // ── 導覽 ────────────────────────────────────────────
+  function switchView(view) {
+    document.querySelectorAll('.view-section').forEach(function(s) { s.classList.remove('active'); });
+    document.getElementById('view-' + view).classList.add('active');
+    document.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('active-btn'); });
+    document.getElementById('nav-' + view).classList.add('active-btn');
+    currentView = view;
+  }
+
+  // ── 附件提示 ────────────────────────────────────────
+  function updateUploadHint(val) {
+    var hint = document.getElementById('uploadHint');
+    if (val === '不適任') {
+      hint.innerHTML = '<div class="text-red-500 font-black mb-2">法律風險提示：不適任 必備文件</div><div class="text-xs text-slate-500 text-left space-y-1 px-2"><div>1. 近三個月面談紀錄（含具體輔導事實）</div><div>2. 績效改善計畫（PIP）及最終考核結果</div><div>3. 曾發出之正式警告或改善通知書</div></div>';
+    } else if (val === '組織調整') {
+      hint.innerHTML = '<div class="text-red-500 font-black mb-2">法律風險提示：組織調整 必備文件</div><div class="text-xs text-slate-500 text-left space-y-1 px-2"><div>1. 部門撤換或業務緊縮公告</div><div>2. 員工異動安置訪談紀錄（安置義務證明）</div></div>';
+    } else if (val) {
+      hint.innerHTML = '<div class="text-blue-600 font-bold">請上傳相關輔助證明文件</div>';
+    } else {
+      hint.textContent = '請先選擇資遣原因，系統將提示必要附件';
+    }
+  }
+
+  // ── 主管送件 ────────────────────────────────────────
+  function submitApply() {
+    var company   = document.getElementById('f-company').value.trim();
+    var unit      = document.getElementById('f-unit').value.trim();
+    var applicant = document.getElementById('f-applicant').value.trim();
+    var employee  = document.getElementById('f-employee').value.trim();
+    var reason    = document.getElementById('f-reason').value;
+    if (!company || !applicant || !employee || !reason) { alert('請填寫公司、申請主管、被資遣員工及資遣原因。'); return; }
+
+    var formData = { caseId: '', company: company, unit: unit, applicant: applicant, employeeName: employee, reason: reason, nextStatus: '待人資回覆' };
+    var btn = document.getElementById('btnApply');
+    setLoading(btn, true, '同步至試算表中...');
+
+    var fileInput = document.getElementById('fileInput');
+    if (fileInput && fileInput.files.length > 0) {
+      readFileAndSubmit(fileInput.files[0], formData, btn, function(caseId) {
+        showSuccess('申請已送出！案件編號：' + caseId);
+        resetApplyForm();
+      });
+    } else {
+      callProcessStep(formData, null, btn, function(caseId) {
+        showSuccess('申請已送出！案件編號：' + caseId);
+        resetApplyForm();
+      });
+    }
+  }
+
+  function resetApplyForm() {
+    ['f-company','f-unit','f-applicant','f-employee'].forEach(function(id) { document.getElementById(id).value = ''; });
+    document.getElementById('f-reason').value = '';
+    document.getElementById('fileInput').value = '';
+    document.getElementById('uploadHint').textContent = '請先選擇資遣原因，系統將提示必要附件';
+  }
+
+  // ── 審核步驟送出 ────────────────────────────────────
+  function submitStep(btnId, nextStatus, afterAction) {
+    var btn = document.getElementById(btnId);
+    var caseId = document.getElementById('hidden-caseId').value;
+    var formData = { caseId: caseId, nextStatus: nextStatus };
+
+    ['risk','hrPlan','missingDocs','managerSign','bossSign','executionResult'].forEach(function(f) {
+      var el = document.getElementById('step-' + f);
+      if (el) formData[f] = el.value;
+    });
+
+    if (nextStatus === '待主管確認' && !formData.risk) { alert('請選擇風險等級。'); return; }
+    if (nextStatus === '待老闆同意' && !formData.managerSign) { alert('請輸入主管姓名確認。'); return; }
+    if (nextStatus === '待人資執行' && !formData.bossSign) { alert('請輸入老闆姓名核准。'); return; }
+    if (nextStatus === '已結案' && !formData.executionResult) { alert('請填寫執行結果。'); return; }
+
+    setLoading(btn, true, '更新中...');
+
+    var fileInput = document.getElementById('step-fileInput');
+    if (fileInput && fileInput.files.length > 0) {
+      readFileAndSubmit(fileInput.files[0], formData, btn, function() {
+        afterStep(afterAction, caseId);
+      });
+    } else {
+      callProcessStep(formData, null, btn, function() {
+        afterStep(afterAction, caseId);
+      });
+    }
+  }
+
+  function afterStep(afterAction, caseId) {
+    if (afterAction === 'backToHR') {
+      showSuccess('已完成！返回人資後台...');
+      setTimeout(function() { loadHRDashboard(); }, 1000);
+    } else {
+      showSuccess('操作成功！');
+      setTimeout(function() { queryCase(); }, 800);
+    }
+  }
+
+  // ── 檔案讀取並送出 ──────────────────────────────────
+  function readFileAndSubmit(file, formData, btn, onSuccess) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var fileData = { data: e.target.result.split(',')[1], name: file.name, type: file.type };
+      callProcessStep(formData, fileData, btn, onSuccess);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ── 通用後台呼叫（統一處理新的 { success, data } 格式）──────
+  function callProcessStep(formData, fileData, btn, onSuccess) {
+    google.script.run
+      .withSuccessHandler(function(res) {
+        setLoading(btn, false);
+        if (res && res.success) {
+          if (onSuccess) onSuccess(res.caseId);
+        } else {
+          alert('操作回應異常：' + (res && res.error ? res.error : '請確認試算表。'));
+        }
+      })
+      .withFailureHandler(function(err) {
+        setLoading(btn, false);
+        alert('後台錯誤：' + err);
+      })
+      .processStep(formData, fileData);
+  }
+
+  // ── 人資後台 ────────────────────────────────────────
+  function loadHRDashboard() {
+    switchView('hr');
+    var box = document.getElementById('hrDashboard');
+    box.innerHTML = '<div class="text-center py-20 text-blue-600 font-bold"><span class="spinner"></span> 同步 Sheet 最新資料...</div>';
+    document.getElementById('filterTabs').innerHTML = '';
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        // ★ 修復：嚴格檢查回傳格式，避免 forEach on undefined
+        if (!res) {
+          box.innerHTML = '<div class="text-center py-10 text-red-400 font-bold">回傳資料為空，請確認部署設定。</div>';
+          return;
+        }
+        if (!res.success) {
+          box.innerHTML = '<div class="p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm font-bold">' + (res.error || '未知錯誤') + '</div>';
+          return;
+        }
+        var cases = res.data;
+        if (!Array.isArray(cases)) {
+          box.innerHTML = '<div class="p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm font-bold">資料格式異常，請重試。</div>';
+          return;
+        }
+        allCases = cases;
+        currentFilter = 'all';
+        renderFilterTabs(cases);
+        renderCaseList(cases, 'all');
+      })
+      .withFailureHandler(function(err) {
+        box.innerHTML = '<div class="p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm font-bold">後台呼叫失敗：' + err + '</div>';
+      })
+      .getAllActiveCases();
+  }
+
+  function renderFilterTabs(cases) {
+    var counts = { all: cases.length };
+    for (var i = 0; i < cases.length; i++) {
+      var s = cases[i]['目前狀態'] || '';
+      counts[s] = (counts[s] || 0) + 1;
+    }
+    var tabs = document.getElementById('filterTabs');
+    var keys = ['all', '待人資回覆', '待主管確認', '待老闆同意', '待人資執行', '已結案'];
+    var html = '';
+    for (var k = 0; k < keys.length; k++) {
+      var key = keys[k];
+      if (key !== 'all' && !counts[key]) continue;
+      var cfg = STATUS_CONFIG[key] || { label: key, color: 'bg-slate-100 text-slate-600', active: 'bg-slate-500 text-white' };
+      var isActive = currentFilter === key;
+      html += '<button onclick="filterCases(\'' + key + '\')" class="px-4 py-1.5 rounded-full text-xs font-bold transition-all ' + (isActive ? cfg.active : cfg.color) + '">' + cfg.label + ' ' + (counts[key] || 0) + '</button>';
+    }
+    tabs.innerHTML = html;
+  }
+
+  function filterCases(status) {
+    currentFilter = status;
+    renderFilterTabs(allCases);
+    renderCaseList(allCases, status);
+  }
+
+  function renderCaseList(cases, filter) {
+    var box = document.getElementById('hrDashboard');
+    var filtered = filter === 'all' ? cases : cases.filter(function(c) { return (c['目前狀態'] || '') === filter; });
+    if (filtered.length === 0) { box.innerHTML = '<div class="py-16 text-center text-slate-300 font-bold border-2 border-dashed rounded-2xl">此狀態目前沒有案件</div>'; return; }
+
+    var html = '<div class="space-y-3">';
+    for (var i = 0; i < filtered.length; i++) {
+      var c = filtered[i];
+      var s = c['目前狀態'] || '';
+      var cfg = STATUS_CONFIG[s] || { color: 'bg-slate-100 text-slate-500' };
+      html += '<div class="p-5 border rounded-2xl flex justify-between items-center hover:border-blue-300 hover:shadow-sm transition-all bg-white">'
+        + '<div class="flex-1 min-w-0">'
+        + '<span class="text-blue-600 font-mono text-xs font-bold">' + (c['案件編號'] || '') + '</span>'
+        + '<div class="font-bold text-slate-800 text-lg mt-0.5">' + (c['被資遣員工'] || '（未填）') + '</div>'
+        + '<div class="text-xs text-slate-400 mt-1">' + (c['所屬公司'] || '') + (c['單位'] ? ' ・ ' + c['單位'] : '') + ' ・ ' + (c['資遣原因'] || '') + '</div>'
+        + '</div>'
+        + '<div class="flex items-center gap-3 ml-4 flex-shrink-0">'
+        + '<span class="text-xs font-bold px-3 py-1 rounded-full ' + cfg.color + '">' + s + '</span>'
+        + '<button onclick="goToCase(\'' + c['案件編號'] + '\')" class="bg-blue-600 text-white px-5 py-2 rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors whitespace-nowrap">查看審核</button>'
+        + '</div></div>';
+    }
+    box.innerHTML = html + '</div>';
+  }
+
+  function goToCase(id) {
+    document.getElementById('searchId').value = id;
+    switchView('search');
+    queryCase();
+  }
+
+  // ── 案件查詢 ────────────────────────────────────────
+  function queryCase() {
+    var id = document.getElementById('searchId').value.trim();
+    if (!id) { alert('請輸入案件編號。'); return; }
+
+    // ★ 效能優化：若 allCases 已有資料，優先從本地查，不打後台
+    if (allCases.length > 0) {
+      for (var i = 0; i < allCases.length; i++) {
+        if (allCases[i]['案件編號'] === id) {
+          renderDetail(allCases[i], document.getElementById('queryResult'));
+          return;
+        }
+      }
+    }
+
+    // 本地找不到才去後台查
+    var box = document.getElementById('queryResult');
+    box.innerHTML = '<div class="text-center py-10 text-blue-600 font-bold"><span class="spinner"></span> 抓取案件資料...</div>';
+    google.script.run
+      .withSuccessHandler(function(res) {
+        // ★ 修復：嚴格檢查回傳格式
+        if (!res) {
+          box.innerHTML = '<div class="text-center py-10 text-red-400 font-bold">回傳資料為空。</div>';
+          return;
+        }
+        if (!res.success) {
+          box.innerHTML = '<div class="p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm font-bold">' + (res.error || '未知錯誤') + '</div>';
+          return;
+        }
+        if (!res.data) {
+          box.innerHTML = '<div class="text-center py-10 text-red-400 font-bold">查無此案件編號。</div>';
+          return;
+        }
+        renderDetail(res.data, box);
+      })
+      .withFailureHandler(function(err) {
+        box.innerHTML = '<div class="p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm font-bold">查詢失敗：' + err + '</div>';
+      })
+      .getCaseData(id);
+  }
+
+  // ── 渲染案件詳情 ────────────────────────────────────
+  function renderDetail(data, container) {
+    var s = data['目前狀態'] || '';
+    var cfg = STATUS_CONFIG[s] || { color: 'bg-slate-100 text-slate-500' };
+
+    var orderedKeys = ['所屬公司','被資遣員工','申請主管','單位','資遣原因'];
+    var infoHtml = '<div class="grid grid-cols-2 md:grid-cols-3 gap-5 text-sm">';
+    for (var ok = 0; ok < orderedKeys.length; ok++) {
+      var k = orderedKeys[ok];
+      if (data[k]) {
+        infoHtml += '<div><p class="text-slate-400 text-[10px] font-bold uppercase tracking-wide">' + k + '</p><p class="font-semibold text-slate-700 text-sm mt-0.5">' + data[k] + '</p></div>';
+      }
+    }
+    infoHtml += '</div>';
+
+    var attachBtns = '';
+    if (data['附件連結']) {
+      attachBtns += '<a href="' + data['附件連結'] + '" target="_blank" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl text-xs font-bold text-slate-600 transition-colors">主管初始附件</a> ';
+    }
+    if (data['主管補充附件']) {
+      attachBtns += '<a href="' + data['主管補充附件'] + '" target="_blank" class="bg-indigo-100 hover:bg-indigo-200 px-4 py-2 rounded-xl text-xs font-bold text-indigo-600 transition-colors">主管補充附件</a>';
+    }
+
+    var timelineHtml = buildTimeline(data, s);
+    var stepHtml = buildStepForm(data, s);
+
+    container.innerHTML = '<div class="bg-white p-8 rounded-3xl border shadow-sm space-y-8">'
+      + '<div class="flex justify-between items-start border-b pb-6">'
+      + '<div>'
+      + '<h2 class="text-3xl font-black text-slate-800">' + (data['案件編號'] || '') + '</h2>'
+      + '<span class="text-xs px-3 py-1 rounded-full font-bold mt-2 block w-max ' + cfg.color + '">' + s + '</span>'
+      + '<p class="text-xs text-slate-400 mt-2">最後更新：' + (data['最後更新時間'] || '—') + '</p>'
+      + '</div>'
+      + (attachBtns ? '<div class="flex flex-col gap-2 flex-shrink-0">' + attachBtns + '</div>' : '')
+      + '</div>'
+      + infoHtml
+      + '<input type="hidden" id="hidden-caseId" value="' + (data['案件編號'] || '') + '">'
+      + timelineHtml
+      + stepHtml
+      + '</div>';
+  }
+
+  // ── 各階段時間軸 ────────────────────────────────────
+  function buildTimeline(data, currentStatus) {
+    var stages = [
+      {
+        key: 'stage1', label: '主管申請送件', icon: '1', color: 'bg-blue-500',
+        check: function() { return true; },
+        content: function() {
+          var lines = [];
+          if (data['資遣原因']) lines.push('<span class="font-bold">原因：</span>' + data['資遣原因']);
+          if (data['附件連結']) lines.push('<a href="' + data['附件連結'] + '" target="_blank" class="text-blue-600 underline text-xs">查看初始附件</a>');
+          return lines.join('<br>');
+        }
+      },
+      {
+        key: 'stage2', label: '人資風險評估', icon: '2', color: 'bg-amber-500',
+        check: function() { return !!data['風險等級'] || !!data['建議方案']; },
+        content: function() {
+          var lines = [];
+          if (data['風險等級']) lines.push('<span class="font-bold">風險等級：</span>' + data['風險等級']);
+          if (data['建議方案']) lines.push('<span class="font-bold">建議方案：</span>' + data['建議方案']);
+          if (data['尚缺資料']) lines.push('<span class="font-bold">補充說明：</span>' + data['尚缺資料']);
+          return lines.join('<br>');
+        }
+      },
+      {
+        key: 'stage3', label: '主管知悉確認', icon: '3', color: 'bg-indigo-500',
+        check: function() { return !!data['主管確認簽署']; },
+        content: function() {
+          var lines = [];
+          if (data['主管確認簽署']) lines.push('<span class="font-bold">簽署：</span>' + data['主管確認簽署']);
+          if (data['主管補充附件']) lines.push('<a href="' + data['主管補充附件'] + '" target="_blank" class="text-indigo-600 underline text-xs">查看主管補充附件</a>');
+          return lines.join('<br>');
+        }
+      },
+      {
+        key: 'stage4', label: '老闆核准', icon: '4', color: 'bg-rose-500',
+        check: function() { return !!data['老闆審核']; },
+        content: function() {
+          var lines = [];
+          if (data['老闆審核']) lines.push('<span class="font-bold">核准簽署：</span>' + data['老闆審核']);
+          return lines.join('<br>');
+        }
+      },
+      {
+        key: 'stage5', label: '人資執行結案', icon: '5', color: 'bg-emerald-500',
+        check: function() { return !!data['執行結果']; },
+        content: function() {
+          var lines = [];
+          if (data['執行結果']) lines.push('<span class="font-bold">執行結果：</span>' + data['執行結果']);
+          return lines.join('<br>');
+        }
+      }
+    ];
+
+    var hasAny = false;
+    for (var i = 1; i < stages.length; i++) {
+      if (stages[i].check()) { hasAny = true; break; }
+    }
+    if (!hasAny) return '';
+
+    var html = '<div><h3 class="text-sm font-bold text-slate-500 uppercase tracking-wide mb-4">各階段記錄</h3><div class="space-y-0 timeline-line">';
+    for (var j = 0; j < stages.length; j++) {
+      var st = stages[j];
+      if (!st.check()) continue;
+      var c = st.content();
+      html += '<div class="flex gap-4 pb-5 relative">'
+        + '<div class="w-8 h-8 rounded-full ' + st.color + ' text-white text-xs font-black flex items-center justify-center flex-shrink-0 z-10">' + st.icon + '</div>'
+        + '<div class="flex-1 pt-1"><p class="text-sm font-bold text-slate-700">' + st.label + '</p>'
+        + (c ? '<div class="text-xs text-slate-500 mt-1 leading-relaxed">' + c + '</div>' : '')
+        + '</div></div>';
+    }
+    html += '</div></div>';
+    return html;
+  }
+
+  // ── 審核表單 ────────────────────────────────────────
+  function buildStepForm(data, s) {
+    if (s === '待人資回覆') {
+      return '<div class="bg-amber-50 p-6 rounded-2xl border border-amber-100 space-y-4">'
+        + '<h3 class="font-bold text-amber-700">人資風險評估回覆</h3>'
+        + '<div class="grid grid-cols-2 gap-3">'
+        + '<div class="space-y-1"><label class="text-xs font-bold text-slate-400">風險等級</label>'
+        + '<select id="step-risk" class="border border-slate-200 p-3 rounded-xl w-full bg-white"><option value="低風險">低風險</option><option value="中風險">中風險</option><option value="高風險">高風險</option></select></div>'
+        + '<div class="space-y-1"><label class="text-xs font-bold text-slate-400">建議方案</label>'
+        + '<select id="step-hrPlan" class="border border-slate-200 p-3 rounded-xl w-full bg-white"><option value="可執行資遣">可執行資遣</option><option value="建議協議離職">建議協議離職</option><option value="補件後再審">補件後再審</option></select></div>'
+        + '</div>'
+        + '<div class="space-y-1"><label class="text-xs font-bold text-slate-400">說明與尚缺資料（選填）</label>'
+        + '<textarea id="step-missingDocs" placeholder="說明建議方案細節、尚需補齊哪些文件..." class="border border-slate-200 p-3 w-full rounded-xl h-24 bg-white"></textarea></div>'
+        + '<button id="btnStep" onclick="submitStep(\'btnStep\',\'待主管確認\',\'backToHR\')" class="w-full bg-amber-600 text-white p-4 rounded-xl font-bold hover:bg-amber-700 transition-colors">提交評估結果 →</button>'
+        + '</div>';
+    }
+    if (s === '待主管確認') {
+      return '<div class="bg-indigo-50 p-6 rounded-2xl border border-indigo-100 space-y-4">'
+        + '<h3 class="font-bold text-indigo-700">主管知悉確認</h3>'
+        + '<div class="text-xs text-slate-600 bg-white rounded-xl p-4 space-y-1 border border-indigo-100">'
+        + '<p class="font-bold text-slate-500 mb-2">人資評估結果</p>'
+        + (data['風險等級'] ? '<p>風險等級：' + data['風險等級'] + '</p>' : '')
+        + (data['建議方案'] ? '<p>建議方案：' + data['建議方案'] + '</p>' : '')
+        + (data['尚缺資料'] ? '<p>補充說明：' + data['尚缺資料'] + '</p>' : '')
+        + '</div>'
+        + '<div class="space-y-1">'
+        + '<label class="text-xs font-bold text-slate-400">補充附件（選填，如面談紀錄、警告信等）</label>'
+        + '<div class="border border-dashed border-indigo-200 rounded-xl p-4 bg-white">'
+        + '<input type="file" id="step-fileInput" class="text-sm text-slate-400 w-full">'
+        + '</div></div>'
+        + '<div class="space-y-1"><label class="text-xs font-bold text-slate-400">主管全名簽署確認</label>'
+        + '<input type="text" id="step-managerSign" placeholder="輸入主管全名以示確認" class="border border-slate-200 p-4 w-full rounded-xl font-bold bg-white"></div>'
+        + '<button id="btnStep" onclick="submitStep(\'btnStep\',\'待老闆同意\',\'stay\')" class="w-full bg-indigo-600 text-white p-4 rounded-xl font-bold hover:bg-indigo-700 transition-colors">知悉風險並送審老闆 →</button>'
+        + '</div>';
+    }
+    if (s === '待老闆同意') {
+      return '<div class="bg-rose-50 p-6 rounded-2xl border border-rose-100 space-y-4">'
+        + '<h3 class="font-bold text-rose-700 text-center">老闆最終核准簽署</h3>'
+        + '<p class="text-xs text-slate-500 text-center">主管已確認：' + (data['主管確認簽署'] || '（未填）') + '</p>'
+        + '<input type="text" id="step-bossSign" placeholder="請老闆輸入姓名以示核准" class="border border-slate-200 p-4 w-full rounded-xl text-center font-bold bg-white">'
+        + '<button id="btnStep" onclick="submitStep(\'btnStep\',\'待人資執行\',\'backToHR\')" class="w-full bg-rose-600 text-white p-4 rounded-xl font-bold hover:bg-rose-700 transition-colors">核准執行資遣 →</button>'
+        + '</div>';
+    }
+    if (s === '待人資執行') {
+      return '<div class="bg-emerald-50 p-6 rounded-2xl border border-emerald-100 space-y-4 text-center">'
+        + '<h3 class="font-bold text-emerald-700">結案回報</h3>'
+        + '<p class="text-xs text-slate-500">老闆核准：' + (data['老闆審核'] || '（未填）') + '</p>'
+        + '<textarea id="step-executionResult" placeholder="填寫結算金額、資遣生效日期、面談記錄摘要..." class="border border-slate-200 p-4 w-full rounded-xl h-28 bg-white"></textarea>'
+        + '<button id="btnStep" onclick="submitStep(\'btnStep\',\'已結案\',\'backToHR\')" class="w-full bg-emerald-600 text-white p-4 rounded-xl font-bold hover:bg-emerald-700 transition-colors">完成並結案 ✓</button>'
+        + '</div>';
+    }
+    return '';
+  }
+
+  // ── 工具 ────────────────────────────────────────────
+  function setLoading(btn, isLoading, text) {
+    if (!btn) return;
+    if (isLoading) { btn._orig = btn.innerHTML; btn.innerHTML = '<span class="spinner"></span>' + (text || '處理中...'); btn.classList.add('btn-loading'); }
+    else { btn.innerHTML = btn._orig || btn.innerHTML; btn.classList.remove('btn-loading'); }
+  }
+
+  function showSuccess(msg) {
+    var el = document.createElement('div');
+    el.className = 'fixed top-20 left-1/2 bg-emerald-600 text-white px-8 py-4 rounded-2xl font-bold shadow-xl z-50 text-sm text-center';
+    el.style.transform = 'translateX(-50%)';
+    el.style.maxWidth = '360px';
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(function() { el.remove(); }, 2500);
+  }
+
+  window.onload = function() { switchView('apply'); };
+  </script>
+</body>
+</html>
