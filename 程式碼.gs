@@ -263,3 +263,6 @@ function processMultipleFiles(formData, filesArray) {
     return { success: false, error: '檔案處理失敗：' + e.toString() };
   }
 }
+function authTrigger() {
+  DriveApp.getFolderById(FOLDER_ID);
+}
