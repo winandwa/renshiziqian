@@ -74,7 +74,7 @@
         </div>
         <div class="p-6 border-2 border-dashed border-blue-100 rounded-2xl bg-blue-50/30 space-y-3">
           <div id="uploadHint" class="text-sm text-slate-500 font-medium text-center">請先選擇資遣原因，系統將提示必要附件</div>
-          <input type="file" id="fileInput" class="block text-sm text-slate-400 mx-auto mt-2">
+          <input type="file" id="fileInput" multiple class="block text-sm text-slate-400 mx-auto mt-2">
         </div>
         <button id="btnApply" onclick="submitApply()" class="w-full bg-blue-600 text-white p-4 rounded-xl font-bold shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all">
           確認送出申請需求
@@ -345,17 +345,33 @@
 
   // ── 附件提示 ────────────────────────────────────────
   function updateUploadHint(val) {
-    var hint = document.getElementById('uploadHint');
-    if (val === '不適任') {
-      hint.innerHTML = '<div class="text-red-500 font-black mb-2">法律風險提示：不適任 必備文件</div><div class="text-xs text-slate-500 text-left space-y-1 px-2"><div>1. 近三個月面談紀錄（含具體輔導事實）</div><div>2. 績效改善計畫（PIP）及最終考核結果</div><div>3. 曾發出之正式警告或改善通知書</div></div>';
-    } else if (val === '業務性質變更') {
-      hint.innerHTML = '<div class="text-red-500 font-black mb-2">法律風險提示：業務性質變更 必備文件</div><div class="text-xs text-slate-500 text-left space-y-1 px-2"><div>1. 部門撤換或業務緊縮公告</div><div>2. 員工異動安置訪談紀錄（安置義務證明）</div></div>';
-    } else if (val) {
-      hint.innerHTML = '<div class="text-blue-600 font-bold">請上傳相關輔助證明文件</div>';
-    } else {
-      hint.textContent = '請先選擇資遣原因，系統將提示必要附件';
-    }
+  var hint = document.getElementById('uploadHint');
+  var commonStyle = 'text-xs text-slate-500 text-left space-y-1 px-2';
+  
+  if (val === '不適任') {
+    hint.innerHTML = '<div class="text-red-500 font-black mb-2">法律風險提示：不適任 必備文件</div>' +
+      '<div class="' + commonStyle + '">' +
+      '<div>1. 近三個月面談紀錄（含具體輔導事實）</div>' +
+      '<div>2. 績效改善計畫 (PIP) 及最終考核結果</div>' +
+      '<div>3. 曾發出之正式警告或改善通知書</div></div>';
+  } else if (val === '業務性質變更') {
+    hint.innerHTML = '<div class="text-red-500 font-black mb-2">法律風險提示：業務性質變更 必備文件</div>' +
+      '<div class="' + commonStyle + '">' +
+      '<div>1. 部門縮編或業務轉型公告</div>' +
+      '<div>2. 員工安置轉調意願訪談紀錄（證明已盡安置義務）</div></div>';
+  } else if (val === '協議離職評估') {
+    hint.innerHTML = '<div class="text-indigo-600 font-black mb-2">專業建議：合意終止契約 (Mutual Separation)</div>' +
+      '<div class="' + commonStyle + '">' +
+      '<div class="bg-indigo-100 p-2 rounded-lg text-indigo-700 mb-2">核心原則：採「優於勞基法」方案以換取不爭執協議。</div>' +
+      '<div>1. <span class="font-bold">優離補償 (Ex-gratia)：</span>建議資遣費計算後不滿一個月者，統一採一個月計。</div>' +
+      '<div>2. <span class="font-bold">預告工資：</span>建議無論天數，均全額給付代通知金。</div>' +
+      '<div>3. <span class="font-bold">文件準備：</span>需準備「合意終止勞動契約協議書」草案。</div></div>';
+  } else if (val) {
+    hint.innerHTML = '<div class="text-blue-600 font-bold">請上傳相關輔助證明文件 (可多選)</div>';
+  } else {
+    hint.textContent = '請先選擇資遣原因，系統將提示必要附件';
   }
+}
 
   // ── 主管送件 ────────────────────────────────────────
   function submitApply() {
@@ -365,14 +381,46 @@
     var employee = document.getElementById('f-employee').value.trim();
     var reason = document.getElementById('f-reason').value;
     if (!company || !applicant || !employee || !reason) { alert('請填寫公司、申請主管、被資遣員工及資遣原因。'); return; }
+    
     var formData = { caseId: '', company: company, unit: unit, applicant: applicant, employeeName: employee, reason: reason, nextStatus: '待人資回覆' };
     var btn = document.getElementById('btnApply');
-    setLoading(btn, true, '同步至試算表中...');
     var fileInput = document.getElementById('fileInput');
-    if (fileInput && fileInput.files.length > 0) {
-      readFileAndSubmit(fileInput.files[0], formData, btn, function(caseId) { showSuccess('申請已送出！案件編號：' + caseId); resetApplyForm(); });
+    
+    setLoading(btn, true, '同步至試算表中...');
+
+    if (fileInput.files.length > 0) {
+      var promises = [];
+      for (var i = 0; i < fileInput.files.length; i++) {
+        promises.push(new Promise(function(resolve, reject) {
+          var reader = new FileReader();
+          var file = fileInput.files[i];
+          reader.onload = function(e) {
+            resolve({ data: e.target.result.split(',')[1], name: file.name, type: file.type });
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        }));
+      }
+
+      Promise.all(promises).then(function(filesArray) {
+        google.script.run
+          .withSuccessHandler(function(res) {
+            setLoading(btn, false);
+            if (res && res.success) {
+              showSuccess('申請已送出！案件編號：' + res.caseId);
+              resetApplyForm();
+            } else {
+              alert('上傳異常：' + (res.error || '請檢查權限'));
+            }
+          })
+          .withFailureHandler(function(err) { setLoading(btn, false); alert('後台錯誤：' + err); })
+          .processMultipleFiles(formData, filesArray); // 這裡會呼叫後端新 function
+      });
     } else {
-      callProcessStep(formData, null, btn, function(caseId) { showSuccess('申請已送出！案件編號：' + caseId); resetApplyForm(); });
+      callProcessStep(formData, null, btn, function(caseId) {
+        showSuccess('申請已送出！案件編號：' + caseId);
+        resetApplyForm();
+      });
     }
   }
 
