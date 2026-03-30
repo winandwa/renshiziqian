@@ -235,34 +235,3 @@ function processStep(formData, fileData) {
     throw e.toString();
   }
 }
-
-// ── 處理多檔案上傳 ──────────────
-function processMultipleFiles(formData, filesArray) {
-  try {
-    var folder = DriveApp.getFolderById(FOLDER_ID);
-    var urls = [];
-    
-    for (var i = 0; i < filesArray.length; i++) {
-      var fData = filesArray[i];
-      var blob = Utilities.newBlob(
-        Utilities.base64Decode(fData.data),
-        fData.type,
-        fData.name
-      );
-      var file = folder.createFile(blob);
-      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-      urls.push(file.getUrl());
-    }
-
-    // 將所有 URL 用換行符號連接，並塞入 formData 模擬原本的 fileUrl
-    formData.existingFileUrl = urls.join('\n');
-    
-    // 直接調用原本的 processStep
-    return processStep(formData, null);
-  } catch (e) {
-    return { success: false, error: '檔案處理失敗：' + e.toString() };
-  }
-}
-function authTrigger() {
-  DriveApp.getFolderById(FOLDER_ID);
-}
