@@ -48,7 +48,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="space-y-1">
             <label class="text-xs font-bold text-slate-400 uppercase tracking-wide">公司全稱</label>
-            <input type="text" id="f-company" placeholder="例如：汶和有限公司" class="w-full border border-slate-200 p-3 rounded-xl bg-slate-50">
+            <input type="text" id="f-company" placeholder="例如：xx有限公司" class="w-full border border-slate-200 p-3 rounded-xl bg-slate-50">
           </div>
           <div class="space-y-1">
             <label class="text-xs font-bold text-slate-400 uppercase tracking-wide">單位</label>
@@ -68,7 +68,7 @@
           <select id="f-reason" onchange="updateUploadHint(this.value)" class="w-full border border-slate-200 p-3 rounded-xl bg-slate-50">
             <option value="">請選擇原因...</option>
             <option value="不適任">不適任 (勞基法11-5)</option>
-            <option value="組織調整">組織調整 (勞基法11-4)</option>
+            <option value="業務性質變更">業務性質變更 (勞基法11-4)</option>
             <option value="協議離職評估">協議離職評估</option>
           </select>
         </div>
@@ -348,8 +348,8 @@
     var hint = document.getElementById('uploadHint');
     if (val === '不適任') {
       hint.innerHTML = '<div class="text-red-500 font-black mb-2">法律風險提示：不適任 必備文件</div><div class="text-xs text-slate-500 text-left space-y-1 px-2"><div>1. 近三個月面談紀錄（含具體輔導事實）</div><div>2. 績效改善計畫（PIP）及最終考核結果</div><div>3. 曾發出之正式警告或改善通知書</div></div>';
-    } else if (val === '組織調整') {
-      hint.innerHTML = '<div class="text-red-500 font-black mb-2">法律風險提示：組織調整 必備文件</div><div class="text-xs text-slate-500 text-left space-y-1 px-2"><div>1. 部門撤換或業務緊縮公告</div><div>2. 員工異動安置訪談紀錄（安置義務證明）</div></div>';
+    } else if (val === '業務性質變更') {
+      hint.innerHTML = '<div class="text-red-500 font-black mb-2">法律風險提示：業務性質變更 必備文件</div><div class="text-xs text-slate-500 text-left space-y-1 px-2"><div>1. 部門撤換或業務緊縮公告</div><div>2. 員工異動安置訪談紀錄（安置義務證明）</div></div>';
     } else if (val) {
       hint.innerHTML = '<div class="text-blue-600 font-bold">請上傳相關輔助證明文件</div>';
     } else {
