@@ -85,14 +85,21 @@ function getHRDashboardData() {
   }
 }
 
-function getCaseData(caseId) {
+function getCaseData(searchKey) {
   try {
     var sheet = getSheet('案件總表');
     var data = sheet.getDataRange().getValues();
     var headers = data[0].map(function(h) { return h.toString().trim(); });
-    var searchId = caseId.toString().trim();
+    var key = searchKey.toString().trim().toLowerCase();
+    
+    var nameIdx = headers.indexOf('被資遣員工');
+
     for (var i = 1; i < data.length; i++) {
-      if (data[i][0].toString().trim() === searchId) {
+      // 比對 A 欄 (案件編號) 或 F 欄 (被資遣員工姓名)
+      var idMatch = data[i][0].toString().trim().toLowerCase() === key;
+      var nameMatch = (nameIdx !== -1) && data[i][nameIdx].toString().trim().toLowerCase() === key;
+      
+      if (idMatch || nameMatch) {
         return { success: true, data: rowToObj(headers, data[i]) };
       }
     }
@@ -164,6 +171,8 @@ function processStep(formData, fileData) {
       if (hMap['附件連結'])     newRow[hMap['附件連結'] - 1]     = fileUrl;
       if (hMap['最後更新時間']) newRow[hMap['最後更新時間'] - 1] = now;
       if (hMap['預計資遣日'])   newRow[hMap['預計資遣日'] - 1]   = formData.estDate || '';
+      // ★ 新增：儲存主管申請說明
+      if (hMap['主管申請說明']) newRow[hMap['主管申請說明'] - 1] = formData.managerDesc || '';
       masterSheet.appendRow(newRow);
     } else {
       // ── 更新案件 ──
@@ -177,6 +186,8 @@ function processStep(formData, fileData) {
       stage('老闆審核',     formData.bossSign);
       stage('執行結果',     formData.executionResult);
       stage('預計資遣日',   formData.estDate);
+      // ★ 新增：更新主管申請說明
+      stage('主管申請說明', formData.managerDesc);
       updates[hMap['最後更新時間']] = now;
 
       if (fileUrl) {
@@ -234,7 +245,7 @@ function generatePipPdf(folder, pip, empName) {
   body.appendParagraph(pip.target || "無");
   body.appendParagraph("【公司提供之資源與協助】").setBold(true);
   body.appendParagraph(pip.support || "無");
-  body.appendParagraph("\n\n主管簽署：____________________  日期：" + Utilities.formatDate(new Date(), "GMT+8", "yyyy/MM/dd"));
+  body.appendParagraph("\n\n本表單由系統於 " + Utilities.formatDate(new Date(), "GMT+8", "yyyy/MM/dd") + " 自動產生，內容僅供輔導參考。");
 
   doc.saveAndClose();
   var pdfBlob = doc.getAs('application/pdf');

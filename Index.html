@@ -40,6 +40,32 @@
 
     <section id="view-apply" class="view-section">
       <div class="bg-white p-8 rounded-3xl shadow-sm border space-y-6">
+        
+        <div class="mb-4">
+          <button type="button" onclick="toggleProcessGuide()" class="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors focus:outline-none">
+            <span class="bg-slate-100 p-1.5 rounded-lg text-sm">💡</span>
+            <span class="text-xs font-bold border-b border-dashed border-slate-300">點擊查看：作業流程與顧問職責說明</span>
+          </button>
+          <div id="processGuide" class="hidden mt-4 p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-5 shadow-inner">
+            <div>
+              <h4 class="text-xs font-black text-slate-800 mb-2 underline decoration-blue-500 underline-offset-4 tracking-wider">【我們的分工與目標】</h4>
+              <p class="text-[11px] text-slate-500 leading-relaxed">
+                本系統旨在協助主管順利完成資遣作業。人資部在此流程中扮演 <span class="text-blue-600 font-bold">「專業顧問」</span> 與 <span class="text-blue-600 font-bold">「決策輔助」</span> 的角色，負責識別潛在風險並提供合規方案建議，確保決策在執行時能擁有完整的支撐與彈性。
+              </p>
+            </div>
+            <div>
+              <h4 class="text-xs font-black text-slate-800 mb-2 underline decoration-blue-500 underline-offset-4 tracking-wider">【簡易操作導引】</h4>
+              <ul class="text-[11px] text-slate-500 space-y-2 list-none">
+                <li><span class="bg-white px-2 py-0.5 rounded border border-slate-200 text-blue-600 font-bold mr-2">1</span> <span class="font-bold text-slate-700">主管送件：</span>填寫預計日期與說明，並上傳輔導紀錄（或線上填寫 PIP 範本）。</li>
+                <li><span class="bg-white px-2 py-0.5 rounded border border-slate-200 text-blue-600 font-bold mr-2">2</span> <span class="font-bold text-slate-700">顧問評估：</span>人資針對案件進行風險評估並回覆建議方案。</li>
+                <li><span class="bg-white px-2 py-0.5 rounded border border-slate-200 text-blue-600 font-bold mr-2">3</span> <span class="font-bold text-slate-700">知悉簽署：</span>主管檢視人資建議，完成線上知悉確認與簽署。</li>
+                <li><span class="bg-white px-2 py-0.5 rounded border border-slate-200 text-blue-600 font-bold mr-2">4</span> <span class="font-bold text-slate-700">老闆簽核：</span>送交經營層進行最終決策核准。</li>
+                <li><span class="bg-white px-2 py-0.5 rounded border border-slate-200 text-blue-600 font-bold mr-2">5</span> <span class="font-bold text-slate-700">執行結案：</span>核准後由人資協同主管執行，並完成系統存檔。</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
         <h2 class="text-2xl font-bold flex items-center gap-3">
           <span class="w-1.5 h-8 bg-blue-600 rounded-full block"></span>
           第一階段：發起資遣申請需求
@@ -88,15 +114,31 @@
             <option value="協議離職評估">協議離職評估</option>
           </select>
         </div>
+
+        <div class="space-y-1">
+          <div class="flex justify-between items-center">
+            <label class="text-xs font-bold text-slate-400 uppercase tracking-wide">主管申請詳細說明 (必填)</label>
+            <button type="button" onclick="document.getElementById('f-managerDesc').value='如附件說明。'" class="text-[10px] text-blue-500 hover:underline">快速填寫：如附件說明</button>
+          </div>
+          <textarea id="f-managerDesc" placeholder="請先選擇資遣原因..." class="w-full border border-slate-200 p-4 rounded-xl bg-slate-50 h-32 focus:bg-white transition-colors"></textarea>
+        </div>
         <div class="p-6 border-2 border-dashed border-blue-100 rounded-2xl bg-blue-50/30 space-y-3">
           <div id="uploadHint" class="text-sm text-slate-500 font-medium text-center">請先選擇資遣原因，系統將提示必要附件</div>
           
-          <div class="flex flex-col md:flex-row gap-3 justify-center items-center py-2">
-            <input type="file" id="fileInput" multiple class="text-sm text-slate-400">
-            <span class="text-slate-300 hidden md:block">|</span>
-            <button type="button" onclick="openPIPModal()" class="bg-amber-100 text-amber-700 px-4 py-2 rounded-lg text-xs font-bold hover:bg-amber-200 transition-all flex items-center gap-2">
-              📝 線上填寫 PIP 績效改善計畫 (自動轉 PDF)
-            </button>
+          <div class="flex flex-col gap-3 justify-center items-center py-2">
+            <div class="flex flex-col md:flex-row gap-3 items-center">
+              <input type="file" id="fileInput" multiple class="text-sm text-slate-400">
+              <span class="text-slate-300 hidden md:block">|</span>
+              <button type="button" onclick="openPIPModal()" class="bg-amber-100 text-amber-700 px-4 py-2 rounded-lg text-xs font-bold hover:bg-amber-200 transition-all flex items-center gap-2">
+                📝 線上填寫 PIP 績效改善計畫 (自動轉 PDF)
+              </button>
+            </div>
+            <div class="text-[10px] text-slate-400">
+              💡 不知道怎麼寫？參考範本：
+              <a href="https://docs.google.com/document/d/1uz_PzRQgEW-gap2yZ72cHuDFWMdhXybc/edit" target="_blank" class="text-blue-500 underline mx-1 hover:text-blue-700">TLV輔導紀錄表</a>、
+              <a href="https://docs.google.com/document/d/1HxAik0ap262dg2rptOsNePFFCxgvnJDz/edit" target="_blank" class="text-blue-500 underline mx-1 hover:text-blue-700">VW輔導紀錄表</a>
+              <span class="ml-2 font-medium">(備註：內容僅供參考，存檔形式不拘)</span>
+            </div>
           </div>
           <div id="pipStatus" class="text-[10px] text-emerald-600 font-bold text-center hidden">✅ PIP 內容已暫存，送出申請時將自動產生 PDF</div>
         </div>
@@ -108,7 +150,7 @@
 
     <section id="view-search" class="view-section space-y-6">
       <div class="bg-white p-6 rounded-2xl shadow-sm border flex gap-3">
-        <input type="text" id="searchId" placeholder="輸入案件編號 (例如: TERM-20260328-001)"
+        <input type="text" id="searchId" placeholder="輸入案件編號 或 員工姓名"
           class="flex-1 border border-slate-200 p-3 rounded-xl"
           onkeydown="if(event.key==='Enter') queryCase()">
         <button onclick="queryCase()" class="bg-slate-900 text-white px-8 rounded-xl font-bold hover:bg-black transition-all">搜尋</button>
@@ -173,6 +215,8 @@
   var currentFilter = 'all';
   var bossUnlocked = false;
   var BOSS_PASSWORD = '8888';
+  var HR_PASSWORD = '0000';      // ★ 您的人資密碼，請自行修改
+  var MANAGER_PASSWORD = '6666'; // ★ 您的主管密碼，請自行修改
 // 新增：暫存 PIP 資料
   var pipData = null;
 
@@ -388,47 +432,49 @@
 
   function updateUploadHint(val) {
     var hint = document.getElementById('uploadHint');
+    var descBox = document.getElementById('f-managerDesc');
     var commonStyle = 'text-xs text-slate-500 text-left space-y-1 px-2';
+    
     if (val === '不適任') {
+      descBox.placeholder = "請具體說明：\n1. 員工哪些績效指標未達標？\n2. 經過幾次輔導？\n3. 最終評核日期與結果...";
       hint.innerHTML = '<div class="text-red-500 font-black mb-2">法律風險提示：不適任 必備文件</div><div class="' + commonStyle + '"><div>1. 近三個月面談紀錄（含具體輔導事實）</div><div>2. 績效改善計畫（PIP）及最終考核結果</div><div>3. 曾發出之正式警告或改善通知書</div></div>';
     } else if (val === '業務性質變更') {
+      descBox.placeholder = "請具體說明：\n1. 部門縮編或業務轉型原因？\n2. 原職缺撤銷狀況？\n3. 是否有提供內部職缺轉調或安置？結果為何...";
       hint.innerHTML = '<div class="text-red-500 font-black mb-2">法律風險提示：業務性質變更 必備文件</div><div class="' + commonStyle + '"><div>1. 部門撤換或業務緊縮公告</div><div>2. 員工異動安置訪談紀錄（安置義務證明）</div></div>';
     } else if (val === '協議離職評估') {
+      descBox.placeholder = "請具體說明：\n1. 預計給予的補償方案？\n2. 資遣費 + 優離金 + 代通知金預估總額...\n3. 目前與員工談判的初步意願...";
       hint.innerHTML = '<div class="text-indigo-600 font-black mb-2">專業建議：合意終止契約 (Mutual Separation)</div>' +
-        '<div class="' + commonStyle + '">' +
-        '<div class="bg-indigo-100 p-2 rounded-lg text-indigo-700 mb-2 font-bold">核心原則：採「優於勞基法」方案以換取不爭執協議。</div>' +
-        '<div>1. <span class="font-bold">優離補償：</span>建議資遣費計算後不滿一個月者，統一採一個月計。</div>' +
-        '<div>2. <span class="font-bold">預告工資：</span>建議無論天數，均全額給付代通知金。</div>' +
-        '<div>3. <span class="font-bold">文件準備：</span>需準備「合意終止勞動契約協議書」草案。</div></div>';
-    } else if (val) {
-      hint.innerHTML = '<div class="text-blue-600 font-bold">請上傳相關輔助證明文件 (可多選)</div>';
+        '<div class="' + commonStyle + '"><div class="bg-indigo-100 p-2 rounded-lg text-indigo-700 mb-2 font-bold">核心原則：採「優於勞基法」方案。</div>' +
+        '<div>1. 優離補償：建議未滿一個月者採一個月計。</div><div>2. 預告工資：建議全額給付代通知金。</div></div>';
     } else {
+      descBox.placeholder = "請先選擇資遣原因...";
       hint.textContent = '請先選擇資遣原因，系統將提示必要附件';
     }
   }
 
   function submitApply() {
     var company = document.getElementById('f-company').value.trim();
-    var unit = document.getElementById('f-unit').value.trim();
     var applicant = document.getElementById('f-applicant').value.trim();
     var employee = document.getElementById('f-employee').value.trim();
     var reason = document.getElementById('f-reason').value;
     var estDate = document.getElementById('f-estDate').value;
+    var managerDesc = document.getElementById('f-managerDesc').value.trim();
     
-    if (!company || !applicant || !employee || !reason || !estDate) { 
-      alert('請填寫所有欄位（公司、姓名、預計日期及資遣原因）。'); 
+    if (!company || !applicant || !employee || !reason || !estDate || !managerDesc) { 
+      alert('請填寫所有必填欄位，包含「主管詳細說明」。'); 
       return; 
     }
     
     var formData = { 
       caseId: '', 
       company: company, 
-      unit: unit, 
+      unit: document.getElementById('f-unit').value.trim(), 
       applicant: applicant, 
       employeeName: employee, 
       reason: reason, 
-      estDate: document.getElementById('f-estDate').value, // 加入日期
-      pipData: pipData, // 加入 PIP 資料
+      estDate: estDate,
+      managerDesc: managerDesc,
+      pipData: pipData, 
       nextStatus: '待人資回覆' 
     };
     var btn = document.getElementById('btnApply');
@@ -455,7 +501,7 @@
           .withSuccessHandler(function(res) {
             setLoading(btn, false);
             if (res && res.success) {
-              showSuccess('申請已送出！案件編號：' + res.caseId);
+              showSuccess('已送出，可至人資後台查詢。案件編號：' + res.caseId);
               resetApplyForm();
             } else {
               alert('上傳異常：' + (res && res.error ? res.error : '請確認試算表。'));
@@ -480,7 +526,24 @@
   }
 
   function submitStep(btnId, nextStatus, afterAction) {
+    // ★ 根據動作目標判斷該輸入哪種密碼
+    var pwCheck = "";
+    var roleName = "";
+    
+    if (nextStatus === '待主管確認' || nextStatus === '已結案') {
+      pwCheck = HR_PASSWORD;
+      roleName = "【人資密碼】";
+    } else if (nextStatus === '待老闆同意' || nextStatus === '待人資再審') {
+      pwCheck = MANAGER_PASSWORD;
+      roleName = "【主管密碼】";
+    }
+
+    var inputPw = prompt("執行此操作需身份驗證，請輸入" + roleName);
+    if (inputPw === null) return; // 點擊取消
+    if (inputPw !== pwCheck) { alert("密碼錯誤，操作取消。"); return; }
+
     var btn = document.getElementById(btnId);
+    // ... 原本的後續邏輯 ...
     var caseId = document.getElementById('hidden-caseId').value;
     // ★ 補上 pipData 與 可能變動的日期
     var formData = { 
@@ -745,7 +808,10 @@
         + (data['尚缺資料'] ? '<p>補充說明：' + data['尚缺資料'] + '</p>' : '') + '</div>'
         + '<div class="space-y-1"><label class="text-xs font-bold text-slate-400">補充附件（選填）</label>'
         + '<div class="border border-dashed border-indigo-200 rounded-xl p-4 bg-white space-y-3">'
-        + '<input type="file" id="step-fileInput" multiple class="text-sm text-slate-400 w-full">'
+        + '<input type="file" id="step-fileInput" onchange="toggleRecallHint(this)" multiple class="text-sm text-slate-400 w-full">'
+        + '<div id="step-recall-hint" class="hidden bg-amber-50 p-3 rounded-lg text-[10px] text-amber-700 leading-relaxed border border-amber-100">'
+        + '⚠️ 偵測到檔案補件：送出後案件將依流程退回「人資再審」。若您下方已勾選確認執行並簽署，人資審閱無誤後將直接為您送審老闆。</div>'
+        + '<div class="flex items-center gap-2 pt-2 border-t border-indigo-50">'
         + '<div class="flex items-center gap-2 pt-2 border-t border-indigo-50">'
         + '<button type="button" onclick="openPIPModal()" class="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-amber-200 transition-all flex items-center gap-1">📝 線上填寫 PIP 範本</button>'
         + '<span id="pipStatus" class="text-[10px] text-emerald-600 font-bold hidden">✅ 已暫存</span>'
@@ -770,7 +836,15 @@
       return recallHtml + '<div class="bg-amber-50 p-6 rounded-2xl border border-amber-100 space-y-4"><h3 class="font-bold text-amber-700">人資再審 (主管已補件)</h3>'
         + '<div class="grid grid-cols-2 gap-3">'
         + '<div class="space-y-1"><label class="text-xs font-bold text-slate-400">風險等級更新</label><select id="step-risk" class="border border-slate-200 p-3 rounded-xl w-full bg-white"><option value="低風險" '+(data['風險等級']==='低風險'?'selected':'')+'>低風險</option><option value="中風險" '+(data['風險等級']==='中風險'?'selected':'')+'>中風險</option><option value="高風險" '+(data['風險等級']==='高風險'?'selected':'')+'>高風險</option></select></div>'
-        + '<div class="space-y-1"><label class="text-xs font-bold text-slate-400">下一步</label><select id="step-next" class="border border-slate-200 p-3 rounded-xl w-full bg-white"><option value="待老闆同意">審核通過，送交老闆</option><option value="待主管確認">退回主管再次補件</option></select></div>'
+        + '<div class="space-y-1"><label class="text-xs font-bold text-slate-400">下一步動作</label>'
+        + (data['主管確認簽署'] 
+          ? '<div class="p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-sm font-bold text-emerald-700 flex items-center gap-2">'
+            + '<span>✓ 主管已確認執行，再審後將送審老闆</span>'
+            + '<input type="hidden" id="step-next" value="待老闆同意"></div>'
+          : '<select id="step-next" class="border border-slate-200 p-3 rounded-xl w-full bg-white">'
+            + '<option value="待老闆同意">審核通過，送交老闆</option>'
+            + '<option value="待主管確認">內容不全，退回主管補件</option></select>')
+        + '</div>'
         + '</div>'
         + '<div class="space-y-1"><label class="text-xs font-bold text-slate-400">再審說明</label><textarea id="step-missingDocs" placeholder="填寫說明..." class="border border-slate-200 p-3 w-full rounded-xl h-24 bg-white">'+(data['尚缺資料']||'')+'</textarea></div>'
         + '<button id="btnStep" onclick="submitHRReeval(\''+data['案件編號']+'\')" class="w-full bg-amber-600 text-white p-4 rounded-xl font-bold hover:bg-amber-700 transition-colors">提交再審結果 →</button></div>';
@@ -806,6 +880,21 @@
     setTimeout(function() { el.remove(); }, 2500);
   }
 
+  // ── 控制補件提醒顯示 ──
+  function toggleRecallHint(input) {
+    var hint = document.getElementById('step-recall-hint');
+    if (hint) {
+      if (input.files && input.files.length > 0) { hint.classList.remove('hidden'); }
+      else { hint.classList.add('hidden'); }
+    }
+  }
+
+  // ── 控制流程導引展開/摺疊 ──
+  function toggleProcessGuide() {
+    var guide = document.getElementById('processGuide');
+    guide.classList.toggle('hidden');
+  }
+
   window.onload = function() { switchView('apply'); };
   // ── 撤回功能 ──
   function recallCaseAction(caseId) {
@@ -821,7 +910,13 @@
 
   // ── 人資再審送出 ──
   function submitHRReeval(caseId) {
+    // ★ 人資再審也需驗證人資密碼
+    var inputPw = prompt("執行人資再審需身份驗證，請輸入【人資密碼】");
+    if (inputPw === null) return;
+    if (inputPw !== HR_PASSWORD) { alert("密碼錯誤，操作取消。"); return; }
+
     var nextStatus = document.getElementById('step-next').value;
+    // ... 原本的後續邏輯 ...
     var formData = {
       caseId: caseId,
       nextStatus: nextStatus,
@@ -843,9 +938,15 @@
   <div id="pipModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
     <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
     <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto m-4">
-      <div class="p-6 border-b sticky top-0 bg-white flex justify-between items-center">
-        <h3 class="text-xl font-black text-slate-800">PIP 績效改善計畫表 (範本)</h3>
-        <button onclick="closePIPModal()" class="text-slate-400 hover:text-slate-600 text-2xl">×</button>
+      <div class="p-6 border-b sticky top-0 bg-white space-y-2">
+        <div class="flex justify-between items-center">
+          <h3 class="text-xl font-black text-slate-800">PIP 績效改善計畫表 (系統範本)</h3>
+          <button onclick="closePIPModal()" class="text-slate-400 hover:text-slate-600 text-2xl">×</button>
+        </div>
+        <div class="bg-amber-50 p-2 rounded-lg text-[10px] text-amber-700 leading-tight">
+          💡 內容僅供參考，存檔形式不拘（Word, PDF 或手寫拍照皆可）。<br>
+          外部參考範本：<a href="https://docs.google.com/document/d/1uz_PzRQgEW-gap2yZ72cHuDFWMdhXybc/edit" target="_blank" class="underline font-bold">TLV範本</a>、<a href="https://docs.google.com/document/d/1HxAik0ap262dg2rptOsNePFFCxgvnJDz/edit" target="_blank" class="underline font-bold">VW範本</a>
+        </div>
       </div>
       <div class="p-8 space-y-5">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
