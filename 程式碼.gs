@@ -171,8 +171,9 @@ function processStep(formData, fileData) {
       if (hMap['附件連結'])     newRow[hMap['附件連結'] - 1]     = fileUrl;
       if (hMap['最後更新時間']) newRow[hMap['最後更新時間'] - 1] = now;
       if (hMap['預計資遣日'])   newRow[hMap['預計資遣日'] - 1]   = formData.estDate || '';
-      // ★ 新增：儲存主管申請說明
       if (hMap['主管申請說明']) newRow[hMap['主管申請說明'] - 1] = formData.managerDesc || '';
+      // ★ 紀錄申請時間
+      if (hMap['主管申請時間']) newRow[hMap['主管申請時間'] - 1] = now;
       masterSheet.appendRow(newRow);
     } else {
       // ── 更新案件 ──
@@ -186,8 +187,23 @@ function processStep(formData, fileData) {
       stage('老闆審核',     formData.bossSign);
       stage('執行結果',     formData.executionResult);
       stage('預計資遣日',   formData.estDate);
-      // ★ 新增：更新主管申請說明
       stage('主管申請說明', formData.managerDesc);
+      
+      // ★ 紀錄各階段 HR 與主管的操作時間點
+      if (formData.nextStatus === '待人資回覆' && !allData[rowIndex-1][hMap['主管申請時間']-1]) stage('主管申請時間', now);
+      if (formData.nextStatus === '待主管確認') stage('HR評估時間', now);
+      if (formData.nextStatus === '待老闆同意') stage('主管簽署時間', now);
+      if (formData.nextStatus === '待人資再審') stage('主管簽署時間', now); 
+      
+      // 偵測是否為再審完成：若原狀態含有「再審」且下一步是「送老闆」，紀錄再審時間
+      var currentStatusInSheet = rowIndex !== -1 ? masterSheet.getRange(rowIndex, hMap['目前狀態']).getValue().toString() : "";
+      if (currentStatusInSheet.indexOf('再審') !== -1 && formData.nextStatus === '待老闆同意') {
+        stage('HR再審時間', now);
+      }
+      
+      if (formData.bossSign) stage('老闆核准時間', now);
+      if (formData.nextStatus === '已結案') stage('執行結案時間', now);
+
       updates[hMap['最後更新時間']] = now;
 
       if (fileUrl) {

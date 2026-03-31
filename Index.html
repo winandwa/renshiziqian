@@ -352,54 +352,38 @@
 
   // ★ 老闆視角：修復多檔案按鈕顯示
   function renderBossDetail(data, container) {
-    var infoRows = [['所屬公司',data['所屬公司']],['單位',data['單位']],['申請主管',data['申請主管']],['被資遣員工',data['被資遣員工']],['資遣原因',data['資遣原因']]];
-    var infoHtml = '<div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">';
-    for (var i = 0; i < infoRows.length; i++) {
-      if (infoRows[i][1]) infoHtml += '<div><p class="text-slate-400 text-[10px] font-bold uppercase tracking-wide">' + infoRows[i][0] + '</p><p class="font-semibold text-slate-700 mt-0.5">' + infoRows[i][1] + '</p></div>';
+    // 建立與查詢頁面一致的內容
+    var s = data['目前狀態'] || '';
+    var cfg = STATUS_CONFIG[s] || { color: 'bg-slate-100 text-slate-500' };
+    
+    // 重用 renderDetail 的排版邏輯，但在下方加入老闆專屬簽核框
+    var orderedKeys = ['所屬公司','被資遣員工','申請主管','單位','資遣原因','預計資遣日'];
+    var infoHtml = '<div class="grid grid-cols-2 md:grid-cols-3 gap-5 text-sm">';
+    for (var ok = 0; ok < orderedKeys.length; ok++) {
+      if (data[orderedKeys[ok]]) infoHtml += '<div><p class="text-slate-400 text-[10px] font-bold uppercase tracking-wide">' + orderedKeys[ok] + '</p><p class="font-semibold text-slate-700 text-sm mt-0.5">' + data[orderedKeys[ok]] + '</p></div>';
     }
     infoHtml += '</div>';
 
-    var hrSummary = '';
-    if (data['風險等級'] || data['建議方案'] || data['尚缺資料']) {
-      hrSummary = '<div class="bg-amber-50 border border-amber-100 rounded-2xl p-5 space-y-2">'
-        + '<p class="text-xs font-bold text-amber-600 uppercase tracking-wide mb-3">人資評估結果</p>'
-        + (data['風險等級'] ? '<div class="flex gap-2"><span class="text-xs text-slate-400 w-16 flex-shrink-0">風險等級</span><span class="text-sm font-bold text-slate-700">' + data['風險等級'] + '</span></div>' : '')
-        + (data['建議方案'] ? '<div class="flex gap-2"><span class="text-xs text-slate-400 w-16 flex-shrink-0">建議方案</span><span class="text-sm font-bold text-slate-700">' + data['建議方案'] + '</span></div>' : '')
-        + (data['尚缺資料'] ? '<div class="flex gap-2"><span class="text-xs text-slate-400 w-16 flex-shrink-0">補充說明</span><span class="text-sm text-slate-600">' + data['尚缺資料'] + '</span></div>' : '')
-        + '</div>';
-    }
-
-    var managerSummary = '';
-    if (data['主管確認簽署']) {
-      managerSummary = '<div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-5">'
-        + '<p class="text-xs font-bold text-indigo-600 uppercase tracking-wide mb-3">主管確認</p>'
-        + '<div class="flex gap-2"><span class="text-xs text-slate-400 w-16 flex-shrink-0">簽署人</span><span class="text-sm font-bold text-slate-700">' + data['主管確認簽署'] + '</span></div>';
-        
-      if (data['主管補充附件']) {
-        data['主管補充附件'].split('\n').forEach(function(url, idx, arr) {
-          if (url.trim()) managerSummary += '<div class="mt-3"><a href="' + url.trim() + '" target="_blank" class="text-indigo-600 text-xs font-bold underline">查看主管補充附件' + (arr.length > 1 ? ' ' + (idx + 1) : '') + ' →</a></div>';
-        });
-      }
-      managerSummary += '</div>';
-    }
-
-    var attachHtml = '';
+    var attachBtns = '';
     if (data['附件連結']) {
-      data['附件連結'].split('\n').forEach(function(url, idx, arr) {
-        if (url.trim()) attachHtml += '<a href="' + url.trim() + '" target="_blank" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl text-xs font-bold text-slate-600 transition-colors inline-block ml-2 mb-2">查看初始附件' + (arr.length > 1 ? ' ' + (idx + 1) : '') + '</a>';
+      data['附件連結'].split('\n').forEach((url, idx, arr) => {
+        if (url.trim()) attachBtns += '<a href="' + url.trim() + '" target="_blank" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl text-xs font-bold text-slate-600 transition-colors inline-block ml-2 mb-2">主管初始附件' + (arr.length > 1 ? ' ' + (idx + 1) : '') + '</a> ';
+      });
+    }
+    if (data['主管補充附件']) {
+      data['主管補充附件'].split('\n').forEach((url, idx, arr) => {
+        if (url.trim()) attachBtns += '<a href="' + url.trim() + '" target="_blank" class="bg-indigo-100 hover:bg-indigo-200 px-4 py-2 rounded-xl text-xs font-bold text-indigo-600 transition-colors inline-block mb-2">主管補充附件' + (arr.length > 1 ? ' ' + (idx + 1) : '') + '</a> ';
       });
     }
 
-    container.innerHTML = '<div class="bg-white p-8 rounded-3xl border-2 border-rose-100 shadow-sm space-y-6">'
-      + '<div class="flex justify-between items-start border-b border-rose-100 pb-5">'
-      + '<div><p class="text-xs font-bold text-rose-400 uppercase tracking-wide mb-1">待您核准</p>'
-      + '<h2 class="text-2xl font-black text-slate-800">' + (data['案件編號'] || '') + '</h2>'
-      + '<p class="text-xs text-slate-400 mt-1">最後更新：' + (data['最後更新時間'] || '—') + '</p></div>'
-      + (attachHtml ? '<div>' + attachHtml + '</div>' : '')
-      + '</div>'
-      + infoHtml
-      + hrSummary
-      + managerSummary
+    container.innerHTML = '<div class="bg-white p-8 rounded-3xl border shadow-sm space-y-8">'
+      + '<div class="flex justify-between items-start border-b pb-6"><div>'
+      + '<h2 class="text-3xl font-black text-slate-800">' + (data['案件編號'] || '') + '</h2>'
+      + '<span class="text-xs px-3 py-1 rounded-full font-bold mt-2 block w-max ' + cfg.color + '">' + s + '</span></div>'
+      + (attachBtns ? '<div class="flex flex-wrap gap-2 flex-shrink-0 justify-end max-w-xs">' + attachBtns + '</div>' : '')
+      + '</div>' + infoHtml
+      + '<div class="p-5 bg-slate-50 rounded-2xl border border-slate-100"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">主管申請說明</p><p class="text-sm text-slate-600">' + (data['主管申請說明'] || '（未填寫）') + '</p></div>'
+      + buildTimeline(data, s)
       + '<div class="bg-rose-50 border-2 border-rose-200 rounded-2xl p-6 space-y-4">'
       + '<h3 class="font-black text-rose-700 text-lg text-center">核准此資遣案件</h3>'
       + '<p class="text-xs text-slate-500 text-center">請輸入您的姓名作為電子簽署確認</p>'
@@ -752,40 +736,52 @@
   // ★ 時間軸視角：修復多檔案顯示
   function buildTimeline(data, currentStatus) {
     var stages = [
-      { label:'主管申請送件', icon:'1', color:'bg-blue-500', check:function(){ return true; }, content:function(){ 
+      { label:'主管申請送件', icon:'1', color:'bg-blue-500', check:()=>true, 
+        content:()=>{ 
           var l=[]; if(data['資遣原因']) l.push('<span class="font-bold">原因：</span>'+data['資遣原因']); 
+          if(data['主管申請說明']) l.push('<span class="font-bold">說明：</span>'+data['主管申請說明']);
           if(data['附件連結']) {
-            data['附件連結'].split('\n').forEach(function(url, idx, arr){
-              if(url.trim()) l.push('<a href="'+url.trim()+'" target="_blank" class="text-blue-600 underline text-xs">查看初始附件'+(arr.length>1?' '+(idx+1):'')+'</a>');
-            });
+            data['附件連結'].split('\n').forEach((url, i, arr)=> { if(url.trim()) l.push('<a href="'+url.trim()+'" target="_blank" class="text-blue-600 underline text-[10px]">查看初始附件'+(arr.length>1?' '+(i+1):'')+'</a>'); });
           }
           return l.join('<br>'); 
         } 
       },
-      { label:'人資風險評估', icon:'2', color:'bg-amber-500', check:function(){ return !!data['風險等級']||!!data['建議方案']; }, content:function(){ var l=[]; if(data['風險等級']) l.push('<span class="font-bold">風險等級：</span>'+data['風險等級']); if(data['建議方案']) l.push('<span class="font-bold">建議方案：</span>'+data['建議方案']); if(data['尚缺資料']) l.push('<span class="font-bold">補充說明：</span>'+data['尚缺資料']); return l.join('<br>'); } },
-      { label:'主管知悉確認', icon:'3', color:'bg-indigo-500', check:function(){ return !!data['主管確認簽署']; }, content:function(){ 
+      { label:'HR 風險評估', icon:'2', color:'bg-amber-500', check:()=>(!!data['風險等級']||!!data['建議方案']), 
+        content:()=>{ var l=[]; if(data['風險等級']) l.push('<span class="font-bold">風險分級：</span>'+data['風險等級']); if(data['建議方案']) l.push('<span class="font-bold">建議方案：</span>'+data['建議方案']); return l.join('<br>'); } 
+      },
+      { label:'主管知悉確認', icon:'3', color:'bg-indigo-500', check:()=>(!!data['主管確認簽署'] || !!data['主管補充附件']), 
+        content:()=>{ 
           var l=[]; if(data['主管確認簽署']) l.push('<span class="font-bold">簽署：</span>'+data['主管確認簽署']); 
           if(data['主管補充附件']) {
-            data['主管補充附件'].split('\n').forEach(function(url, idx, arr){
-              if(url.trim()) l.push('<a href="'+url.trim()+'" target="_blank" class="text-indigo-600 underline text-xs">查看主管補充附件'+(arr.length>1?' '+(idx+1):'')+'</a>');
-            });
+            data['主管補充附件'].split('\n').forEach((url, i, arr)=> { if(url.trim()) l.push('<a href="'+url.trim()+'" target="_blank" class="text-indigo-600 underline text-[10px]">查看補充附件'+(arr.length>1?' '+(i+1):'')+'</a>'); });
           }
           return l.join('<br>'); 
         } 
       },
-      { label:'老闆核准', icon:'4', color:'bg-rose-500', check:function(){ return !!data['老闆審核']; }, content:function(){ return data['老闆審核'] ? '<span class="font-bold">核准簽署：</span>'+data['老闆審核'] : ''; } },
-      { label:'人資執行結案', icon:'5', color:'bg-emerald-500', check:function(){ return !!data['執行結果']; }, content:function(){ return data['執行結果'] ? '<span class="font-bold">執行結果：</span>'+data['執行結果'] : ''; } }
+      { label:'HR 再審確認', icon:'4', color:'bg-amber-600', 
+        check:()=>(data['主管補充附件'] && currentStatus !== '待人資再審'), 
+        content:()=>{ 
+          var l = ['HR 已針對補件內容完成再審，並依流程推進。'];
+          if(data['尚缺資料']) l.push('<div class="mt-1 p-2 bg-white rounded border border-amber-100 shadow-sm"><span class="font-bold text-amber-700">HR 備註：</span>'+data['尚缺資料']+'</div>'); 
+          return l.join('<br>');
+        } 
+      },
+      { label:'老闆決策核准', icon:'5', color:'bg-rose-500', check:()=>!!data['老闆審核'], content:()=>data['老闆審核'] ? '<span class="font-bold">核准簽署：</span>'+data['老闆審核'] : '' },
+      { label:'HR 執行結案', icon:'6', color:'bg-emerald-500', check:()=>!!data['執行結果'], content:()=>data['執行結果'] ? '<span class="font-bold">執行結果：</span>'+data['執行結果'] : '' }
     ];
-    var hasAny = false;
-    for (var i = 1; i < stages.length; i++) { if (stages[i].check()) { hasAny = true; break; } }
+
+    var hasAny = false; for (var i = 1; i < stages.length; i++) { if (stages[i].check()) { hasAny = true; break; } }
     if (!hasAny) return '';
-    var html = '<div><h3 class="text-sm font-bold text-slate-500 uppercase tracking-wide mb-4">各階段記錄</h3><div class="space-y-0 timeline-line">';
+    var html = '<div><h3 class="text-sm font-bold text-slate-500 uppercase tracking-wide mb-4">各階段進度紀錄</h3><div class="space-y-0 timeline-line">';
+    
+    // 對應新欄位名稱
+    var timeFields = ['主管申請時間','HR評估時間','主管簽署時間','HR再審時間','老闆核准時間','執行結案時間'];
+    
     for (var j = 0; j < stages.length; j++) {
-      var st = stages[j];
-      if (!st.check()) continue;
-      var c = st.content();
-      html += '<div class="flex gap-4 pb-5 relative"><div class="w-8 h-8 rounded-full ' + st.color + ' text-white text-xs font-black flex items-center justify-center flex-shrink-0 z-10">' + st.icon + '</div>'
-        + '<div class="flex-1 pt-1"><p class="text-sm font-bold text-slate-700">' + st.label + '</p>' + (c ? '<div class="text-xs text-slate-500 mt-1 leading-relaxed">' + c + '</div>' : '') + '</div></div>';
+      var st = stages[j]; if (!st.check()) continue;
+      var tVal = data[timeFields[j]] ? '<span class="ml-2 text-[10px] font-normal text-slate-400">(' + data[timeFields[j]] + ')</span>' : '';
+      html += '<div class="flex gap-4 pb-6 relative"><div class="w-8 h-8 rounded-full ' + st.color + ' text-white text-xs font-black flex items-center justify-center flex-shrink-0 z-10">' + st.icon + '</div>'
+        + '<div class="flex-1 pt-1"><p class="text-sm font-bold text-slate-700">' + st.label + tVal + '</p><div class="text-xs text-slate-500 mt-1 leading-relaxed">' + st.content() + '</div></div></div>';
     }
     return html + '</div></div>';
   }
