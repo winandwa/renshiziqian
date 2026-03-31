@@ -44,23 +44,23 @@
         <div class="mb-4">
           <button type="button" onclick="toggleProcessGuide()" class="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors focus:outline-none">
             <span class="bg-slate-100 p-1.5 rounded-lg text-sm">💡</span>
-            <span class="text-xs font-bold border-b border-dashed border-slate-300">點擊查看：作業流程與顧問職責說明</span>
+            <span class="text-xs font-bold border-b border-dashed border-slate-300">點擊查看：作業流程與 HR 職責說明</span>
           </button>
           <div id="processGuide" class="hidden mt-4 p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-5 shadow-inner">
             <div>
               <h4 class="text-xs font-black text-slate-800 mb-2 underline decoration-blue-500 underline-offset-4 tracking-wider">【我們的分工與目標】</h4>
               <p class="text-[11px] text-slate-500 leading-relaxed">
-                本系統旨在協助主管順利完成資遣作業。人資部在此流程中扮演 <span class="text-blue-600 font-bold">「專業顧問」</span> 與 <span class="text-blue-600 font-bold">「決策輔助」</span> 的角色，負責識別潛在風險並提供合規方案建議，確保決策在執行時能擁有完整的支撐與彈性。
+                本系統旨在協助主管順利完成資遣作業。HR在此流程中扮演 <span class="text-blue-600 font-bold">「專業支援」</span> 與 <span class="text-blue-600 font-bold">「決策輔助」</span> 的角色，負責識別潛在風險並提供合規方案建議，確保決策在執行時能擁有完整的支撐與彈性。
               </p>
             </div>
             <div>
               <h4 class="text-xs font-black text-slate-800 mb-2 underline decoration-blue-500 underline-offset-4 tracking-wider">【簡易操作導引】</h4>
               <ul class="text-[11px] text-slate-500 space-y-2 list-none">
                 <li><span class="bg-white px-2 py-0.5 rounded border border-slate-200 text-blue-600 font-bold mr-2">1</span> <span class="font-bold text-slate-700">主管送件：</span>填寫預計日期與說明，並上傳輔導紀錄（或線上填寫 PIP 範本）。</li>
-                <li><span class="bg-white px-2 py-0.5 rounded border border-slate-200 text-blue-600 font-bold mr-2">2</span> <span class="font-bold text-slate-700">顧問評估：</span>人資針對案件進行風險評估並回覆建議方案。</li>
-                <li><span class="bg-white px-2 py-0.5 rounded border border-slate-200 text-blue-600 font-bold mr-2">3</span> <span class="font-bold text-slate-700">知悉簽署：</span>主管檢視人資建議，完成線上知悉確認與簽署。</li>
+                <li><span class="bg-white px-2 py-0.5 rounded border border-slate-200 text-blue-600 font-bold mr-2">2</span> <span class="font-bold text-slate-700">HR 評估：</span>由 HR 進行風險評估並回覆建議方案。</li>
+                <li><span class="bg-white px-2 py-0.5 rounded border border-slate-200 text-blue-600 font-bold mr-2">3</span> <span class="font-bold text-slate-700">知悉簽署：</span>主管檢視 HR 建議，完成線上確認與電子簽署。</li>
                 <li><span class="bg-white px-2 py-0.5 rounded border border-slate-200 text-blue-600 font-bold mr-2">4</span> <span class="font-bold text-slate-700">老闆簽核：</span>送交經營層進行最終決策核准。</li>
-                <li><span class="bg-white px-2 py-0.5 rounded border border-slate-200 text-blue-600 font-bold mr-2">5</span> <span class="font-bold text-slate-700">執行結案：</span>核准後由人資協同主管執行，並完成系統存檔。</li>
+                <li><span class="bg-white px-2 py-0.5 rounded border border-slate-200 text-blue-600 font-bold mr-2">5</span> <span class="font-bold text-slate-700">執行結案：</span>核准後由 HR 協同主管執行，並完成系統存檔。</li>
               </ul>
             </div>
           </div>
@@ -774,7 +774,7 @@
     if (!hasAny) return '';
     var html = '<div><h3 class="text-sm font-bold text-slate-500 uppercase tracking-wide mb-4">各階段進度紀錄</h3><div class="space-y-0 timeline-line">';
     
-    // 對應新欄位名稱
+    // ★ 修正對應欄位名稱，與 GS 同步 (HR評估時間、HR再審時間)
     var timeFields = ['主管申請時間','HR評估時間','主管簽署時間','HR再審時間','老闆核准時間','執行結案時間'];
     
     for (var j = 0; j < stages.length; j++) {
