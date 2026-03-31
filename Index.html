@@ -38,7 +38,6 @@
 
   <main class="max-w-4xl mx-auto p-6 mt-4">
 
-    <!-- 主管送件 -->
     <section id="view-apply" class="view-section">
       <div class="bg-white p-8 rounded-3xl shadow-sm border space-y-6">
         <h2 class="text-2xl font-bold flex items-center gap-3">
@@ -74,7 +73,7 @@
         </div>
         <div class="p-6 border-2 border-dashed border-blue-100 rounded-2xl bg-blue-50/30 space-y-3">
           <div id="uploadHint" class="text-sm text-slate-500 font-medium text-center">請先選擇資遣原因，系統將提示必要附件</div>
-          <input type="file" id="fileInput" class="block text-sm text-slate-400 mx-auto mt-2">
+          <input type="file" id="fileInput" multiple class="block text-sm text-slate-400 mx-auto mt-2">
         </div>
         <button id="btnApply" onclick="submitApply()" class="w-full bg-blue-600 text-white p-4 rounded-xl font-bold shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all">
           確認送出申請需求
@@ -82,7 +81,6 @@
       </div>
     </section>
 
-    <!-- 案件查詢 -->
     <section id="view-search" class="view-section space-y-6">
       <div class="bg-white p-6 rounded-2xl shadow-sm border flex gap-3">
         <input type="text" id="searchId" placeholder="輸入案件編號 (例如: TERM-20260328-001)"
@@ -95,7 +93,6 @@
       </div>
     </section>
 
-    <!-- 人資後台 -->
     <section id="view-hr" class="view-section space-y-6">
       <div class="bg-white p-8 rounded-3xl shadow-sm border">
         <div class="flex justify-between items-center mb-6">
@@ -107,10 +104,7 @@
       </div>
     </section>
 
-    <!-- 老闆簽核 -->
     <section id="view-boss" class="view-section">
-
-      <!-- 密碼鎖定畫面 -->
       <div id="boss-lock" class="flex items-center justify-center min-h-[60vh]">
         <div class="bg-white p-10 rounded-3xl shadow-sm border w-full max-w-sm space-y-6 text-center">
           <div class="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center mx-auto text-3xl">🔐</div>
@@ -128,7 +122,6 @@
         </div>
       </div>
 
-      <!-- 老闆簽核主畫面 -->
       <div id="boss-main" class="hidden space-y-6">
         <div class="bg-white p-8 rounded-3xl shadow-sm border">
           <div class="flex justify-between items-center mb-6">
@@ -145,7 +138,6 @@
         </div>
         <div id="bossDetail" class="hidden"></div>
       </div>
-
     </section>
 
   </main>
@@ -158,15 +150,15 @@
   var BOSS_PASSWORD = '8888';
 
   var STATUS_CONFIG = {
-    'all':      { label: '全部',    color: 'bg-slate-100 text-slate-700', active: 'bg-slate-700 text-white' },
-    '待人資回覆': { label: '待人資回覆', color: 'bg-amber-100 text-amber-700',  active: 'bg-amber-500 text-white' },
+    'all':      { label: '全部', color: 'bg-slate-100 text-slate-700', active: 'bg-slate-700 text-white' },
+    '待人資回覆': { label: '待人資回覆', color: 'bg-amber-100 text-amber-700', active: 'bg-amber-500 text-white' },
     '待主管確認': { label: '待主管確認', color: 'bg-indigo-100 text-indigo-700', active: 'bg-indigo-500 text-white' },
-    '待老闆同意': { label: '待老闆同意', color: 'bg-rose-100 text-rose-700',    active: 'bg-rose-500 text-white' },
+    '待人資再審': { label: '待人資再審', color: 'bg-amber-200 text-amber-800', active: 'bg-amber-600 text-white' },
+    '待老闆同意': { label: '待老闆同意', color: 'bg-rose-100 text-rose-700', active: 'bg-rose-500 text-white' },
     '待人資執行': { label: '待人資執行', color: 'bg-emerald-100 text-emerald-700', active: 'bg-emerald-500 text-white' },
-    '已結案':    { label: '已結案',  color: 'bg-slate-100 text-slate-500',  active: 'bg-slate-400 text-white' }
+    '已結案':    { label: '已結案', color: 'bg-slate-100 text-slate-500', active: 'bg-slate-400 text-white' }
   };
 
-  // ── 導覽 ────────────────────────────────────────────
   function switchView(view) {
     document.querySelectorAll('.view-section').forEach(function(s) { s.classList.remove('active'); });
     document.getElementById('view-' + view).classList.add('active');
@@ -179,7 +171,6 @@
     }
   }
 
-  // ── 老闆密碼 ────────────────────────────────────────
   function verifyBossPassword() {
     var pw = document.getElementById('bossPassword').value;
     if (pw === BOSS_PASSWORD) {
@@ -213,7 +204,6 @@
     showBossLock();
   }
 
-  // ── 老闆待核准清單 ──────────────────────────────────
   function loadBossDashboard() {
     var box = document.getElementById('bossDashboard');
     box.innerHTML = '<div class="text-center py-20 text-rose-500 font-bold"><span class="spinner"></span> 載入待核准案件...</div>';
@@ -253,7 +243,6 @@
       .getAllActiveCases();
   }
 
-  // ── 老闆簽核詳情 ────────────────────────────────────
   function openBossDetail(caseId) {
     var detailBox = document.getElementById('bossDetail');
     detailBox.classList.remove('hidden');
@@ -274,6 +263,7 @@
       .getCaseData(caseId);
   }
 
+  // ★ 老闆視角：修復多檔案按鈕顯示
   function renderBossDetail(data, container) {
     var infoRows = [['所屬公司',data['所屬公司']],['單位',data['單位']],['申請主管',data['申請主管']],['被資遣員工',data['被資遣員工']],['資遣原因',data['資遣原因']]];
     var infoHtml = '<div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">';
@@ -296,12 +286,22 @@
     if (data['主管確認簽署']) {
       managerSummary = '<div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-5">'
         + '<p class="text-xs font-bold text-indigo-600 uppercase tracking-wide mb-3">主管確認</p>'
-        + '<div class="flex gap-2"><span class="text-xs text-slate-400 w-16 flex-shrink-0">簽署人</span><span class="text-sm font-bold text-slate-700">' + data['主管確認簽署'] + '</span></div>'
-        + (data['主管補充附件'] ? '<div class="mt-3"><a href="' + data['主管補充附件'] + '" target="_blank" class="text-indigo-600 text-xs font-bold underline">查看主管補充附件 →</a></div>' : '')
-        + '</div>';
+        + '<div class="flex gap-2"><span class="text-xs text-slate-400 w-16 flex-shrink-0">簽署人</span><span class="text-sm font-bold text-slate-700">' + data['主管確認簽署'] + '</span></div>';
+        
+      if (data['主管補充附件']) {
+        data['主管補充附件'].split('\n').forEach(function(url, idx, arr) {
+          if (url.trim()) managerSummary += '<div class="mt-3"><a href="' + url.trim() + '" target="_blank" class="text-indigo-600 text-xs font-bold underline">查看主管補充附件' + (arr.length > 1 ? ' ' + (idx + 1) : '') + ' →</a></div>';
+        });
+      }
+      managerSummary += '</div>';
     }
 
-    var attachHtml = data['附件連結'] ? '<a href="' + data['附件連結'] + '" target="_blank" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl text-xs font-bold text-slate-600 transition-colors">查看初始附件</a>' : '';
+    var attachHtml = '';
+    if (data['附件連結']) {
+      data['附件連結'].split('\n').forEach(function(url, idx, arr) {
+        if (url.trim()) attachHtml += '<a href="' + url.trim() + '" target="_blank" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl text-xs font-bold text-slate-600 transition-colors inline-block ml-2 mb-2">查看初始附件' + (arr.length > 1 ? ' ' + (idx + 1) : '') + '</a>';
+      });
+    }
 
     container.innerHTML = '<div class="bg-white p-8 rounded-3xl border-2 border-rose-100 shadow-sm space-y-6">'
       + '<div class="flex justify-between items-start border-b border-rose-100 pb-5">'
@@ -343,21 +343,27 @@
       .processStep({ caseId: caseId, nextStatus: '待人資執行', bossSign: sign }, null);
   }
 
-  // ── 附件提示 ────────────────────────────────────────
   function updateUploadHint(val) {
     var hint = document.getElementById('uploadHint');
+    var commonStyle = 'text-xs text-slate-500 text-left space-y-1 px-2';
     if (val === '不適任') {
-      hint.innerHTML = '<div class="text-red-500 font-black mb-2">法律風險提示：不適任 必備文件</div><div class="text-xs text-slate-500 text-left space-y-1 px-2"><div>1. 近三個月面談紀錄（含具體輔導事實）</div><div>2. 績效改善計畫（PIP）及最終考核結果</div><div>3. 曾發出之正式警告或改善通知書</div></div>';
+      hint.innerHTML = '<div class="text-red-500 font-black mb-2">法律風險提示：不適任 必備文件</div><div class="' + commonStyle + '"><div>1. 近三個月面談紀錄（含具體輔導事實）</div><div>2. 績效改善計畫（PIP）及最終考核結果</div><div>3. 曾發出之正式警告或改善通知書</div></div>';
     } else if (val === '業務性質變更') {
-      hint.innerHTML = '<div class="text-red-500 font-black mb-2">法律風險提示：業務性質變更 必備文件</div><div class="text-xs text-slate-500 text-left space-y-1 px-2"><div>1. 部門撤換或業務緊縮公告</div><div>2. 員工異動安置訪談紀錄（安置義務證明）</div></div>';
+      hint.innerHTML = '<div class="text-red-500 font-black mb-2">法律風險提示：業務性質變更 必備文件</div><div class="' + commonStyle + '"><div>1. 部門撤換或業務緊縮公告</div><div>2. 員工異動安置訪談紀錄（安置義務證明）</div></div>';
+    } else if (val === '協議離職評估') {
+      hint.innerHTML = '<div class="text-indigo-600 font-black mb-2">專業建議：合意終止契約 (Mutual Separation)</div>' +
+        '<div class="' + commonStyle + '">' +
+        '<div class="bg-indigo-100 p-2 rounded-lg text-indigo-700 mb-2 font-bold">核心原則：採「優於勞基法」方案以換取不爭執協議。</div>' +
+        '<div>1. <span class="font-bold">優離補償：</span>建議資遣費計算後不滿一個月者，統一採一個月計。</div>' +
+        '<div>2. <span class="font-bold">預告工資：</span>建議無論天數，均全額給付代通知金。</div>' +
+        '<div>3. <span class="font-bold">文件準備：</span>需準備「合意終止勞動契約協議書」草案。</div></div>';
     } else if (val) {
-      hint.innerHTML = '<div class="text-blue-600 font-bold">請上傳相關輔助證明文件</div>';
+      hint.innerHTML = '<div class="text-blue-600 font-bold">請上傳相關輔助證明文件 (可多選)</div>';
     } else {
       hint.textContent = '請先選擇資遣原因，系統將提示必要附件';
     }
   }
 
-  // ── 主管送件 ────────────────────────────────────────
   function submitApply() {
     var company = document.getElementById('f-company').value.trim();
     var unit = document.getElementById('f-unit').value.trim();
@@ -365,14 +371,46 @@
     var employee = document.getElementById('f-employee').value.trim();
     var reason = document.getElementById('f-reason').value;
     if (!company || !applicant || !employee || !reason) { alert('請填寫公司、申請主管、被資遣員工及資遣原因。'); return; }
+    
     var formData = { caseId: '', company: company, unit: unit, applicant: applicant, employeeName: employee, reason: reason, nextStatus: '待人資回覆' };
     var btn = document.getElementById('btnApply');
-    setLoading(btn, true, '同步至試算表中...');
     var fileInput = document.getElementById('fileInput');
+    
+    setLoading(btn, true, '同步至試算表中...');
+
     if (fileInput && fileInput.files.length > 0) {
-      readFileAndSubmit(fileInput.files[0], formData, btn, function(caseId) { showSuccess('申請已送出！案件編號：' + caseId); resetApplyForm(); });
+      var promises = [];
+      for (var i = 0; i < fileInput.files.length; i++) {
+        promises.push(new Promise(function(resolve, reject) {
+          var reader = new FileReader();
+          var file = fileInput.files[i];
+          reader.onload = function(e) {
+            resolve({ data: e.target.result.split(',')[1], name: file.name, type: file.type });
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        }));
+      }
+
+      Promise.all(promises).then(function(filesArray) {
+        google.script.run
+          .withSuccessHandler(function(res) {
+            setLoading(btn, false);
+            if (res && res.success) {
+              showSuccess('申請已送出！案件編號：' + res.caseId);
+              resetApplyForm();
+            } else {
+              alert('上傳異常：' + (res && res.error ? res.error : '請確認試算表。'));
+            }
+          })
+          .withFailureHandler(function(err) { setLoading(btn, false); alert('後台錯誤：' + err); })
+          .processStep(formData, filesArray);
+      });
     } else {
-      callProcessStep(formData, null, btn, function(caseId) { showSuccess('申請已送出！案件編號：' + caseId); resetApplyForm(); });
+      callProcessStep(formData, null, btn, function(caseId) {
+        showSuccess('申請已送出！案件編號：' + caseId);
+        resetApplyForm();
+      });
     }
   }
 
@@ -383,7 +421,6 @@
     document.getElementById('uploadHint').textContent = '請先選擇資遣原因，系統將提示必要附件';
   }
 
-  // ── 審核步驟送出 ────────────────────────────────────
   function submitStep(btnId, nextStatus, afterAction) {
     var btn = document.getElementById(btnId);
     var caseId = document.getElementById('hidden-caseId').value;
@@ -392,29 +429,72 @@
       var el = document.getElementById('step-' + f);
       if (el) formData[f] = el.value;
     });
+
     if (nextStatus === '待主管確認' && !formData.risk) { alert('請選擇風險等級。'); return; }
-    if (nextStatus === '待老闆同意' && !formData.managerSign) { alert('請輸入主管姓名確認。'); return; }
+    
+    if (nextStatus === '待老闆同意') {
+      var agreeCheck = document.getElementById('step-managerAgree');
+      if (agreeCheck && !agreeCheck.checked) {
+        alert('請先勾選「知悉風險，同意執行」');
+        return;
+      }
+      if (!formData.managerSign) { alert('請輸入主管姓名確認。'); return; }
+
+      // ★ 判斷：如果有選檔案，攔截目標改為「待人資再審」
+      var fileInput = document.getElementById('step-fileInput');
+      if (fileInput && fileInput.files.length > 0) {
+        formData.nextStatus = '待人資再審';
+      }
+    }
+    
     if (nextStatus === '已結案' && !formData.executionResult) { alert('請填寫執行結果。'); return; }
+    
     setLoading(btn, true, '更新中...');
     var fileInput = document.getElementById('step-fileInput');
+    
     if (fileInput && fileInput.files.length > 0) {
-      readFileAndSubmit(fileInput.files[0], formData, btn, function() { afterStep(afterAction, caseId); });
+      var promises = [];
+      for (var i = 0; i < fileInput.files.length; i++) {
+        promises.push(new Promise(function(resolve, reject) {
+          var reader = new FileReader();
+          var file = fileInput.files[i];
+          reader.onload = function(e) {
+            resolve({ data: e.target.result.split(',')[1], name: file.name, type: file.type });
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        }));
+      }
+
+      Promise.all(promises).then(function(filesArray) {
+        google.script.run
+          .withSuccessHandler(function(res) {
+            setLoading(btn, false);
+            if (res && res.success) { afterStep(afterAction, caseId); }
+            else { alert('操作回應異常：' + (res && res.error ? res.error : '請確認試算表。')); }
+          })
+          .withFailureHandler(function(err) { setLoading(btn, false); alert('後台錯誤：' + err); })
+          .processStep(formData, filesArray);
+      });
     } else {
       callProcessStep(formData, null, btn, function() { afterStep(afterAction, caseId); });
     }
   }
 
   function afterStep(afterAction, caseId) {
-    if (afterAction === 'backToHR') { showSuccess('已完成！返回人資後台...'); setTimeout(function() { loadHRDashboard(); }, 1000); }
-    else { showSuccess('操作成功！'); setTimeout(function() { queryCase(); }, 800); }
-  }
-
-  function readFileAndSubmit(file, formData, btn, onSuccess) {
-    var reader = new FileReader();
-    reader.onload = function(e) {
-      callProcessStep(formData, { data: e.target.result.split(',')[1], name: file.name, type: file.type }, btn, onSuccess);
-    };
-    reader.readAsDataURL(file);
+    if (afterAction === 'backToHR') { 
+      showSuccess('已完成！返回人資後台...'); 
+      setTimeout(function() { loadHRDashboard(); }, 1500); 
+    } else if (afterAction === 'backToSearch') {
+      showSuccess('已成功送審老闆！');
+      // 清空畫面並刷新查詢
+      document.getElementById('queryResult').innerHTML = '<div class="py-20 text-center text-slate-300 font-bold border-2 border-dashed rounded-3xl">請輸入案件編號進行查詢</div>';
+      document.getElementById('searchId').value = '';
+      setTimeout(function() { switchView('search'); }, 1500);
+    } else { 
+      showSuccess('操作成功！'); 
+      setTimeout(function() { queryCase(); }, 1500); 
+    }
   }
 
   function callProcessStep(formData, fileData, btn, onSuccess) {
@@ -428,7 +508,6 @@
       .processStep(formData, fileData);
   }
 
-  // ── 人資後台 ────────────────────────────────────────
   function loadHRDashboard() {
     switchView('hr');
     var box = document.getElementById('hrDashboard');
@@ -454,7 +533,7 @@
   function renderFilterTabs(cases) {
     var counts = { all: cases.length };
     for (var i = 0; i < cases.length; i++) { var s = cases[i]['目前狀態'] || ''; counts[s] = (counts[s] || 0) + 1; }
-    var keys = ['all','待人資回覆','待主管確認','待老闆同意','待人資執行','已結案'];
+    var keys = ['all','待人資回覆','待主管確認','待人資再審','待老闆同意','待人資執行','已結案'];
     var html = '';
     for (var k = 0; k < keys.length; k++) {
       var key = keys[k];
@@ -489,7 +568,6 @@
 
   function goToCase(id) { document.getElementById('searchId').value = id; switchView('search'); queryCase(); }
 
-  // ── 案件查詢 ────────────────────────────────────────
   function queryCase() {
     var id = document.getElementById('searchId').value.trim();
     if (!id) { alert('請輸入案件編號。'); return; }
@@ -510,7 +588,7 @@
       .getCaseData(id);
   }
 
-  // ── 渲染案件詳情 ────────────────────────────────────
+  // ★ 前端查詢視角：修復多檔案按鈕顯示
   function renderDetail(data, container) {
     var s = data['目前狀態'] || '';
     var cfg = STATUS_CONFIG[s] || { color: 'bg-slate-100 text-slate-500' };
@@ -520,26 +598,54 @@
       if (data[orderedKeys[ok]]) infoHtml += '<div><p class="text-slate-400 text-[10px] font-bold uppercase tracking-wide">' + orderedKeys[ok] + '</p><p class="font-semibold text-slate-700 text-sm mt-0.5">' + data[orderedKeys[ok]] + '</p></div>';
     }
     infoHtml += '</div>';
+
     var attachBtns = '';
-    if (data['附件連結']) attachBtns += '<a href="' + data['附件連結'] + '" target="_blank" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl text-xs font-bold text-slate-600 transition-colors">主管初始附件</a> ';
-    if (data['主管補充附件']) attachBtns += '<a href="' + data['主管補充附件'] + '" target="_blank" class="bg-indigo-100 hover:bg-indigo-200 px-4 py-2 rounded-xl text-xs font-bold text-indigo-600 transition-colors">主管補充附件</a>';
+    if (data['附件連結']) {
+      data['附件連結'].split('\n').forEach(function(url, idx, arr) {
+        if (url.trim()) attachBtns += '<a href="' + url.trim() + '" target="_blank" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl text-xs font-bold text-slate-600 transition-colors inline-block mb-2">主管初始附件' + (arr.length > 1 ? ' ' + (idx + 1) : '') + '</a> ';
+      });
+    }
+    if (data['主管補充附件']) {
+      data['主管補充附件'].split('\n').forEach(function(url, idx, arr) {
+        if (url.trim()) attachBtns += '<a href="' + url.trim() + '" target="_blank" class="bg-indigo-100 hover:bg-indigo-200 px-4 py-2 rounded-xl text-xs font-bold text-indigo-600 transition-colors inline-block mb-2">主管補充附件' + (arr.length > 1 ? ' ' + (idx + 1) : '') + '</a> ';
+      });
+    }
+
     container.innerHTML = '<div class="bg-white p-8 rounded-3xl border shadow-sm space-y-8">'
       + '<div class="flex justify-between items-start border-b pb-6"><div>'
       + '<h2 class="text-3xl font-black text-slate-800">' + (data['案件編號'] || '') + '</h2>'
       + '<span class="text-xs px-3 py-1 rounded-full font-bold mt-2 block w-max ' + cfg.color + '">' + s + '</span>'
       + '<p class="text-xs text-slate-400 mt-2">最後更新：' + (data['最後更新時間'] || '—') + '</p></div>'
-      + (attachBtns ? '<div class="flex flex-col gap-2 flex-shrink-0">' + attachBtns + '</div>' : '')
+      + (attachBtns ? '<div class="flex flex-wrap gap-2 flex-shrink-0 justify-end max-w-xs">' + attachBtns + '</div>' : '')
       + '</div>' + infoHtml
       + '<input type="hidden" id="hidden-caseId" value="' + (data['案件編號'] || '') + '">'
       + buildTimeline(data, s) + buildStepForm(data, s) + '</div>';
   }
 
-  // ── 時間軸 ──────────────────────────────────────────
+  // ★ 時間軸視角：修復多檔案顯示
   function buildTimeline(data, currentStatus) {
     var stages = [
-      { label:'主管申請送件', icon:'1', color:'bg-blue-500', check:function(){ return true; }, content:function(){ var l=[]; if(data['資遣原因']) l.push('<span class="font-bold">原因：</span>'+data['資遣原因']); if(data['附件連結']) l.push('<a href="'+data['附件連結']+'" target="_blank" class="text-blue-600 underline text-xs">查看初始附件</a>'); return l.join('<br>'); } },
+      { label:'主管申請送件', icon:'1', color:'bg-blue-500', check:function(){ return true; }, content:function(){ 
+          var l=[]; if(data['資遣原因']) l.push('<span class="font-bold">原因：</span>'+data['資遣原因']); 
+          if(data['附件連結']) {
+            data['附件連結'].split('\n').forEach(function(url, idx, arr){
+              if(url.trim()) l.push('<a href="'+url.trim()+'" target="_blank" class="text-blue-600 underline text-xs">查看初始附件'+(arr.length>1?' '+(idx+1):'')+'</a>');
+            });
+          }
+          return l.join('<br>'); 
+        } 
+      },
       { label:'人資風險評估', icon:'2', color:'bg-amber-500', check:function(){ return !!data['風險等級']||!!data['建議方案']; }, content:function(){ var l=[]; if(data['風險等級']) l.push('<span class="font-bold">風險等級：</span>'+data['風險等級']); if(data['建議方案']) l.push('<span class="font-bold">建議方案：</span>'+data['建議方案']); if(data['尚缺資料']) l.push('<span class="font-bold">補充說明：</span>'+data['尚缺資料']); return l.join('<br>'); } },
-      { label:'主管知悉確認', icon:'3', color:'bg-indigo-500', check:function(){ return !!data['主管確認簽署']; }, content:function(){ var l=[]; if(data['主管確認簽署']) l.push('<span class="font-bold">簽署：</span>'+data['主管確認簽署']); if(data['主管補充附件']) l.push('<a href="'+data['主管補充附件']+'" target="_blank" class="text-indigo-600 underline text-xs">查看主管補充附件</a>'); return l.join('<br>'); } },
+      { label:'主管知悉確認', icon:'3', color:'bg-indigo-500', check:function(){ return !!data['主管確認簽署']; }, content:function(){ 
+          var l=[]; if(data['主管確認簽署']) l.push('<span class="font-bold">簽署：</span>'+data['主管確認簽署']); 
+          if(data['主管補充附件']) {
+            data['主管補充附件'].split('\n').forEach(function(url, idx, arr){
+              if(url.trim()) l.push('<a href="'+url.trim()+'" target="_blank" class="text-indigo-600 underline text-xs">查看主管補充附件'+(arr.length>1?' '+(idx+1):'')+'</a>');
+            });
+          }
+          return l.join('<br>'); 
+        } 
+      },
       { label:'老闆核准', icon:'4', color:'bg-rose-500', check:function(){ return !!data['老闆審核']; }, content:function(){ return data['老闆審核'] ? '<span class="font-bold">核准簽署：</span>'+data['老闆審核'] : ''; } },
       { label:'人資執行結案', icon:'5', color:'bg-emerald-500', check:function(){ return !!data['執行結果']; }, content:function(){ return data['執行結果'] ? '<span class="font-bold">執行結果：</span>'+data['執行結果'] : ''; } }
     ];
@@ -557,7 +663,6 @@
     return html + '</div></div>';
   }
 
-  // ── 審核表單 ────────────────────────────────────────
   function buildStepForm(data, s) {
     if (s === '待人資回覆') {
       return '<div class="bg-amber-50 p-6 rounded-2xl border border-amber-100 space-y-4"><h3 class="font-bold text-amber-700">人資風險評估回覆</h3>'
@@ -574,13 +679,34 @@
         + (data['風險等級'] ? '<p>風險等級：' + data['風險等級'] + '</p>' : '')
         + (data['建議方案'] ? '<p>建議方案：' + data['建議方案'] + '</p>' : '')
         + (data['尚缺資料'] ? '<p>補充說明：' + data['尚缺資料'] + '</p>' : '') + '</div>'
-        + '<div class="space-y-1"><label class="text-xs font-bold text-slate-400">補充附件（選填）</label><div class="border border-dashed border-indigo-200 rounded-xl p-4 bg-white"><input type="file" id="step-fileInput" class="text-sm text-slate-400 w-full"></div></div>'
-        + '<div class="space-y-1"><label class="text-xs font-bold text-slate-400">主管全名簽署確認</label><input type="text" id="step-managerSign" placeholder="輸入主管全名以示確認" class="border border-slate-200 p-4 w-full rounded-xl font-bold bg-white"></div>'
-        + '<button id="btnStep" onclick="submitStep(\'btnStep\',\'待老闆同意\',\'stay\')" class="w-full bg-indigo-600 text-white p-4 rounded-xl font-bold hover:bg-indigo-700 transition-colors">知悉風險並送審老闆 →</button></div>';
+        + '<div class="space-y-1"><label class="text-xs font-bold text-slate-400">補充附件（選填）</label><div class="border border-dashed border-indigo-200 rounded-xl p-4 bg-white"><input type="file" id="step-fileInput" multiple class="text-sm text-slate-400 w-full"></div></div>'
+        + '<div class="bg-white p-5 rounded-xl border border-indigo-200">'
+        + '<label class="flex items-center gap-3 cursor-pointer mb-4"><input type="checkbox" id="step-managerAgree" class="w-5 h-5 accent-indigo-600 cursor-pointer"><span class="font-bold text-indigo-900 text-sm">知悉風險，同意執行</span></label>'
+        + '<div class="space-y-1"><label class="text-xs font-bold text-slate-400">主管全名簽署確認</label><input type="text" id="step-managerSign" placeholder="輸入主管全名以示確認" class="border border-slate-200 p-4 w-full rounded-xl font-bold bg-slate-50"></div>'
+        + '</div>'
+        + '<button id="btnStep" onclick="submitStep(\'btnStep\',\'待老闆同意\',\'backToSearch\')" class="w-full bg-indigo-600 text-white p-4 rounded-xl font-bold hover:bg-indigo-700 transition-colors">知悉風險並送審老闆 →</button></div>';
+    }
+    // 建立撤回區塊 (存入變數，不直接 return，讓下面的表單也能順利顯示)
+    var recallHtml = '';
+    if (s === '待老闆同意' || s === '待人資再審') {
+      var msg = (s === '待人資再審') ? '案件已退回人資進行補件再審' : '此案件待老闆核准';
+      recallHtml = '<div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-3 text-center mb-4">'
+        + '<p class="text-sm text-slate-500 font-bold">📋 ' + msg + '</p>'
+        + '<button onclick="recallCaseAction(\''+data['案件編號']+'\')" class="bg-slate-400 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-slate-500 transition-colors">撤回送件 (重新編輯)</button>'
+        + '</div>';
+    }
+
+    if (s === '待人資再審') {
+      return recallHtml + '<div class="bg-amber-50 p-6 rounded-2xl border border-amber-100 space-y-4"><h3 class="font-bold text-amber-700">人資再審 (主管已補件)</h3>'
+        + '<div class="grid grid-cols-2 gap-3">'
+        + '<div class="space-y-1"><label class="text-xs font-bold text-slate-400">風險等級更新</label><select id="step-risk" class="border border-slate-200 p-3 rounded-xl w-full bg-white"><option value="低風險" '+(data['風險等級']==='低風險'?'selected':'')+'>低風險</option><option value="中風險" '+(data['風險等級']==='中風險'?'selected':'')+'>中風險</option><option value="高風險" '+(data['風險等級']==='高風險'?'selected':'')+'>高風險</option></select></div>'
+        + '<div class="space-y-1"><label class="text-xs font-bold text-slate-400">下一步</label><select id="step-next" class="border border-slate-200 p-3 rounded-xl w-full bg-white"><option value="待老闆同意">審核通過，送交老闆</option><option value="待主管確認">退回主管再次補件</option></select></div>'
+        + '</div>'
+        + '<div class="space-y-1"><label class="text-xs font-bold text-slate-400">再審說明</label><textarea id="step-missingDocs" placeholder="填寫說明..." class="border border-slate-200 p-3 w-full rounded-xl h-24 bg-white">'+(data['尚缺資料']||'')+'</textarea></div>'
+        + '<button id="btnStep" onclick="submitHRReeval(\''+data['案件編號']+'\')" class="w-full bg-amber-600 text-white p-4 rounded-xl font-bold hover:bg-amber-700 transition-colors">提交再審結果 →</button></div>';
     }
     if (s === '待老闆同意') {
-      return '<div class="bg-rose-50 p-6 rounded-2xl border border-rose-100 space-y-3 text-center">'
-        + '<p class="text-sm text-rose-500 font-bold">📋 此案件待老闆於「老闆簽核」專區核准</p>'
+      return recallHtml + '<div class="bg-rose-50 p-6 rounded-2xl border border-rose-100 space-y-3 text-center">'
         + '<p class="text-xs text-slate-400">主管已確認：' + (data['主管確認簽署'] || '（未填）') + '</p>'
         + '<button onclick="switchView(\'boss\')" class="text-rose-600 text-xs font-bold underline hover:text-rose-800">前往老闆簽核頁 →</button>'
         + '</div>';
@@ -594,7 +720,6 @@
     return '';
   }
 
-  // ── 工具 ────────────────────────────────────────────
   function setLoading(btn, isLoading, text) {
     if (!btn) return;
     if (isLoading) { btn._orig = btn.innerHTML; btn.innerHTML = '<span class="spinner"></span>' + (text || '處理中...'); btn.classList.add('btn-loading'); }
@@ -612,6 +737,38 @@
   }
 
   window.onload = function() { switchView('apply'); };
+  // ── 撤回功能 ──
+  function recallCaseAction(caseId) {
+    if(!confirm('確定要撤回此案件嗎？（撤回後將退回「待主管確認」狀態）')) return;
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res.success) { showSuccess('撤回成功！'); queryCase(); }
+        else { alert('撤回失敗：' + res.error); }
+      })
+      .withFailureHandler(function(err) { alert('後台錯誤：' + err); })
+      .recallCase(caseId);
+  }
+
+  // ── 人資再審送出 ──
+  function submitHRReeval(caseId) {
+    var nextStatus = document.getElementById('step-next').value;
+    var formData = {
+      caseId: caseId,
+      nextStatus: nextStatus,
+      risk: document.getElementById('step-risk').value,
+      missingDocs: document.getElementById('step-missingDocs').value
+    };
+    var btn = document.getElementById('btnStep');
+    setLoading(btn, true, '更新中...');
+    google.script.run
+      .withSuccessHandler(function(res) {
+        setLoading(btn, false);
+        if (res.success) { showSuccess('再審完成！'); setTimeout(function(){ loadHRDashboard(); }, 1000); }
+        else { alert('操作失敗：' + res.error); }
+      })
+      .withFailureHandler(function(err){ setLoading(btn, false); alert('後台錯誤：' + err); })
+      .processStep(formData, null);
+  }
   </script>
 </body>
 </html>

@@ -68,7 +68,6 @@ function getAllActiveCases() {
   }
 }
 
-// ── 人資後台：只撈「待人資回覆」的案件 ──────────────────────────
 function getHRDashboardData() {
   try {
     var sheet = getSheet('案件總表');
@@ -97,7 +96,6 @@ function getHRDashboardData() {
   }
 }
 
-// ── 查詢單一案件 ────────────────────────────────────────────────
 function getCaseData(caseId) {
   try {
     var sheet = getSheet('案件總表');
@@ -126,24 +124,31 @@ function processStep(formData, fileData) {
 
     var caseId  = formData.caseId ? formData.caseId.toString().trim() : '';
     var fileUrl = formData.existingFileUrl || '';
-    var isManagerSupplemental = (formData.nextStatus === '待老闆同意');
+    // ★ 加入「待人資再審」的判斷，確保補件寫入「主管補充附件」不覆蓋原檔
+    var isManagerSupplemental = (formData.nextStatus === '待老闆同意' || formData.nextStatus === '待人資再審');
 
-    // 上傳附件到 Drive
+    // ★ 修改點：移除 setSharing，避免企業版權限阻擋，並整合多檔案處理
     if (fileData) {
       var folder = DriveApp.getFolderById(FOLDER_ID);
-      var blob = Utilities.newBlob(
-        Utilities.base64Decode(fileData.data),
-        fileData.type,
-        fileData.name
-      );
-      var file = folder.createFile(blob);
-      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-      fileUrl = file.getUrl();
+      
+      if (Array.isArray(fileData)) {
+        var urls = [];
+        for (var f = 0; f < fileData.length; f++) {
+          var blob = Utilities.newBlob(Utilities.base64Decode(fileData[f].data), fileData[f].type, fileData[f].name);
+          var file = folder.createFile(blob);
+          // 拿掉 file.setSharing，因為資料夾已經是公開的了，檔案會自動繼承
+          urls.push(file.getUrl());
+        }
+        fileUrl = urls.join('\n');
+      } else if (fileData.data) {
+        var blobSingle = Utilities.newBlob(Utilities.base64Decode(fileData.data), fileData.type, fileData.name);
+        var fileSingle = folder.createFile(blobSingle);
+        // 拿掉 file.setSharing，因為資料夾已經是公開的了，檔案會自動繼承
+        fileUrl = fileSingle.getUrl();
+      }
     }
 
-    // 一次性建立 header map（避免重複讀取）
     var hMap = buildHeaderMap(masterSheet);
-
     var requiredCols = ['案件編號', '目前狀態', '最後更新時間'];
     for (var r = 0; r < requiredCols.length; r++) {
       if (!hMap[requiredCols[r]]) {
@@ -151,7 +156,6 @@ function processStep(formData, fileData) {
       }
     }
 
-    // 一次讀取全部資料（避免後面再讀一次）
     var allData = masterSheet.getDataRange().getValues();
     var rowIndex = -1;
     if (caseId) {
@@ -187,7 +191,6 @@ function processStep(formData, fileData) {
 
     } else {
       // ── 更新現有案件 ──────────────────────────────────────────
-      // 批次收集所有要寫入的欄位，一次 setValues 減少 API 呼叫次數
       var updates = {};
       function stage(col, val) {
         if (hMap[col] && val !== undefined && val !== null && val.toString().trim() !== '') {
@@ -205,20 +208,24 @@ function processStep(formData, fileData) {
       updates[hMap['最後更新時間']] = now;
 
       if (fileUrl) {
-        if (isManagerSupplemental && hMap['主管補充附件']) {
-          updates[hMap['主管補充附件']] = fileUrl;
-        } else if (hMap['附件連結']) {
+        // 如果是主管確認階段 (isManagerSupplemental 為 true)
+        if (isManagerSupplemental) {
+          // 只寫入「主管補充附件」欄位。如果試算表沒有這個欄位，請在 G 欄(附件連結) 右邊手動新增一欄名為「主管補充附件」
+          if (hMap['主管補充附件']) {
+            updates[hMap['主管補充附件']] = fileUrl;
+          }
+        } 
+        // 只有非主管補充階段，才寫入「附件連結」(初始附件)
+        else if (hMap['附件連結']) {
           updates[hMap['附件連結']] = fileUrl;
         }
       }
 
-      // 逐欄寫入（GAS 不支援稀疏 setValues，逐欄仍是最穩做法）
       for (var col in updates) {
         masterSheet.getRange(rowIndex, parseInt(col)).setValue(updates[col]);
       }
     }
 
-    // 操作紀錄
     var operator = formData.applicant || formData.managerSign || formData.bossSign || '系統';
     logSheet.appendRow([
       now,
@@ -231,7 +238,41 @@ function processStep(formData, fileData) {
     return { success: true, caseId: caseId };
 
   } catch (e) {
-    // 統一回傳錯誤物件，讓前端 withFailureHandler 接得到
     throw e.toString();
+  }
+}
+// ── 撤回送件 ───────────────────────────────────
+function recallCase(caseId) {
+  try {
+    var ss = getSpreadsheet();
+    var sheet = ss.getSheetByName('案件總表');
+    var logSheet = ss.getSheetByName('操作紀錄');
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0].map(function(h) { return h.toString().trim(); });
+    
+    var idIdx = headers.indexOf('案件編號');
+    var statusIdx = headers.indexOf('目前狀態');
+    var signIdx = headers.indexOf('主管確認簽署');
+    var updateIdx = headers.indexOf('最後更新時間');
+
+    for (var i = 1; i < data.length; i++) {
+      if (data[i][idIdx].toString().trim() === caseId) {
+        var currentStatus = data[i][statusIdx];
+        if (currentStatus === '待老闆同意' || currentStatus === '待人資再審') {
+          // 狀態退回，並清除主管的電子簽名
+          sheet.getRange(i + 1, statusIdx + 1).setValue('待主管確認');
+          if (signIdx !== -1) sheet.getRange(i + 1, signIdx + 1).setValue('');
+          if (updateIdx !== -1) sheet.getRange(i + 1, updateIdx + 1).setValue(new Date());
+
+          logSheet.appendRow([new Date(), caseId, '主管', '撤回送件', '重新編輯']);
+          return { success: true };
+        } else {
+          return { success: false, error: '案件目前狀態無法撤回' };
+        }
+      }
+    }
+    return { success: false, error: '找不到案件' };
+  } catch (e) {
+    return { success: false, error: e.toString() };
   }
 }
