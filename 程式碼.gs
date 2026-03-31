@@ -43,24 +43,17 @@ function rowToObj(headers, row) {
   return obj;
 }
 
-// ── 讀取所有案件（統一回傳 { success, data } 格式）──────────────
+// ── 讀取所有案件 ──────────────
 function getAllActiveCases() {
   try {
     var sheet = getSheet('案件總表');
     var data = sheet.getDataRange().getValues();
     if (data.length < 2) return { success: true, data: [] };
-
     var headers = data[0].map(function(h) { return h.toString().trim(); });
-
-    if (headers.indexOf('目前狀態') === -1) {
-      return { success: false, error: '找不到目前狀態欄位，目前欄位：' + headers.join('、') };
-    }
-
     var result = [];
     for (var i = 1; i < data.length; i++) {
-      var row = data[i];
-      if (!row[0] || row[0].toString().trim() === '') continue;
-      result.push(rowToObj(headers, row));
+      if (!data[i][0] || data[i][0].toString().trim() === '') continue;
+      result.push(rowToObj(headers, data[i]));
     }
     return { success: true, data: result };
   } catch (e) {
@@ -68,6 +61,7 @@ function getAllActiveCases() {
   }
 }
 
+// ── 人資後台：撈取「待回覆」與「待再審」的案件 ──────────────
 function getHRDashboardData() {
   try {
     var sheet = getSheet('案件總表');
@@ -76,18 +70,13 @@ function getHRDashboardData() {
 
     var headers = data[0].map(function(h) { return h.toString().trim(); });
     var statusIdx = headers.indexOf('目前狀態');
-
-    if (statusIdx === -1) {
-      return { success: false, error: '找不到目前狀態欄位，目前欄位：' + headers.join('、') };
-    }
-
     var result = [];
     for (var i = 1; i < data.length; i++) {
-      var row = data[i];
-      if (!row[0] || row[0].toString().trim() === '') continue;
-      var status = row[statusIdx] ? row[statusIdx].toString().replace(/\s+/g, '') : '';
-      if (status === '待人資回覆') {
-        result.push(rowToObj(headers, row));
+      if (!data[i][0] || data[i][0].toString().trim() === '') continue;
+      var status = data[i][statusIdx] ? data[i][statusIdx].toString().replace(/\s+/g, '') : '';
+      // ★ 同步 Index.html 的邏輯，讓再審案件也能在後台出現
+      if (status === '待人資回覆' || status === '待人資再審') {
+        result.push(rowToObj(headers, data[i]));
       }
     }
     return { success: true, data: result };
@@ -102,13 +91,12 @@ function getCaseData(caseId) {
     var data = sheet.getDataRange().getValues();
     var headers = data[0].map(function(h) { return h.toString().trim(); });
     var searchId = caseId.toString().trim();
-
     for (var i = 1; i < data.length; i++) {
       if (data[i][0].toString().trim() === searchId) {
         return { success: true, data: rowToObj(headers, data[i]) };
       }
     }
-    return { success: true, data: null }; // 查無此案件
+    return { success: true, data: null };
   } catch (e) {
     return { success: false, error: '查詢失敗：' + e.toString() };
   }
@@ -124,59 +112,48 @@ function processStep(formData, fileData) {
 
     var caseId  = formData.caseId ? formData.caseId.toString().trim() : '';
     var fileUrl = formData.existingFileUrl || '';
-    // ★ 加入「待人資再審」的判斷，確保補件寫入「主管補充附件」不覆蓋原檔
     var isManagerSupplemental = (formData.nextStatus === '待老闆同意' || formData.nextStatus === '待人資再審');
 
-    // ★ 修改點：移除 setSharing，避免企業版權限阻擋，並整合多檔案處理
+    // ★ 處理線上填寫的 PIP 資料並轉為 PDF
+    if (formData.pipData) {
+      var folder = DriveApp.getFolderById(FOLDER_ID);
+      var pipFileUrl = generatePipPdf(folder, formData.pipData, formData.employeeName || '未命名員工');
+      fileUrl = fileUrl ? fileUrl + '\n' + pipFileUrl : pipFileUrl;
+    }
+
+    // 處理檔案上傳
     if (fileData) {
       var folder = DriveApp.getFolderById(FOLDER_ID);
-      
       if (Array.isArray(fileData)) {
         var urls = [];
         for (var f = 0; f < fileData.length; f++) {
           var blob = Utilities.newBlob(Utilities.base64Decode(fileData[f].data), fileData[f].type, fileData[f].name);
           var file = folder.createFile(blob);
-          // 拿掉 file.setSharing，因為資料夾已經是公開的了，檔案會自動繼承
           urls.push(file.getUrl());
         }
-        fileUrl = urls.join('\n');
+        fileUrl = fileUrl ? fileUrl + '\n' + urls.join('\n') : urls.join('\n');
       } else if (fileData.data) {
         var blobSingle = Utilities.newBlob(Utilities.base64Decode(fileData.data), fileData.type, fileData.name);
         var fileSingle = folder.createFile(blobSingle);
-        // 拿掉 file.setSharing，因為資料夾已經是公開的了，檔案會自動繼承
-        fileUrl = fileSingle.getUrl();
+        fileUrl = fileUrl ? fileUrl + '\n' + fileSingle.getUrl() : fileSingle.getUrl();
       }
     }
 
     var hMap = buildHeaderMap(masterSheet);
-    var requiredCols = ['案件編號', '目前狀態', '最後更新時間'];
-    for (var r = 0; r < requiredCols.length; r++) {
-      if (!hMap[requiredCols[r]]) {
-        throw new Error('試算表缺少必要欄位：' + requiredCols[r]);
-      }
-    }
-
     var allData = masterSheet.getDataRange().getValues();
     var rowIndex = -1;
     if (caseId) {
       for (var i = 1; i < allData.length; i++) {
-        if (allData[i][0].toString().trim() === caseId) {
-          rowIndex = i + 1;
-          break;
-        }
+        if (allData[i][0].toString().trim() === caseId) { rowIndex = i + 1; break; }
       }
     }
 
     if (rowIndex === -1) {
-      // ── 新案件 ────────────────────────────────────────────────
+      // ── 新案件 ──
       var dateStr = Utilities.formatDate(now, 'GMT+8', 'yyyyMMdd');
       var seq = ('000' + masterSheet.getLastRow()).slice(-3);
       caseId = 'TERM-' + dateStr + '-' + seq;
-
-      var totalCols = masterSheet.getLastColumn();
-      var newRow = [];
-      for (var n = 0; n < totalCols; n++) newRow.push('');
-
+      var newRow = new Array(masterSheet.getLastColumn()).fill('');
       if (hMap['案件編號'])     newRow[hMap['案件編號'] - 1]     = caseId;
       if (hMap['目前狀態'])     newRow[hMap['目前狀態'] - 1]     = formData.nextStatus || '待人資回覆';
       if (hMap['所屬公司'])     newRow[hMap['所屬公司'] - 1]     = formData.company || '';
@@ -186,18 +163,12 @@ function processStep(formData, fileData) {
       if (hMap['資遣原因'])     newRow[hMap['資遣原因'] - 1]     = formData.reason || '';
       if (hMap['附件連結'])     newRow[hMap['附件連結'] - 1]     = fileUrl;
       if (hMap['最後更新時間']) newRow[hMap['最後更新時間'] - 1] = now;
-
+      if (hMap['預計資遣日'])   newRow[hMap['預計資遣日'] - 1]   = formData.estDate || '';
       masterSheet.appendRow(newRow);
-
     } else {
-      // ── 更新現有案件 ──────────────────────────────────────────
+      // ── 更新案件 ──
       var updates = {};
-      function stage(col, val) {
-        if (hMap[col] && val !== undefined && val !== null && val.toString().trim() !== '') {
-          updates[hMap[col]] = val;
-        }
-      }
-
+      function stage(col, val) { if (hMap[col] && val) updates[hMap[col]] = val; }
       stage('目前狀態',     formData.nextStatus);
       stage('風險等級',     formData.risk);
       stage('建議方案',     formData.hrPlan);
@@ -205,42 +176,24 @@ function processStep(formData, fileData) {
       stage('主管確認簽署', formData.managerSign);
       stage('老闆審核',     formData.bossSign);
       stage('執行結果',     formData.executionResult);
+      stage('預計資遣日',   formData.estDate);
       updates[hMap['最後更新時間']] = now;
 
       if (fileUrl) {
-        // 如果是主管確認階段 (isManagerSupplemental 為 true)
-        if (isManagerSupplemental) {
-          // 只寫入「主管補充附件」欄位。如果試算表沒有這個欄位，請在 G 欄(附件連結) 右邊手動新增一欄名為「主管補充附件」
-          if (hMap['主管補充附件']) {
-            updates[hMap['主管補充附件']] = fileUrl;
-          }
-        } 
-        // 只有非主管補充階段，才寫入「附件連結」(初始附件)
-        else if (hMap['附件連結']) {
+        if (isManagerSupplemental && hMap['主管補充附件']) {
+          updates[hMap['主管補充附件']] = fileUrl;
+        } else if (hMap['附件連結']) {
           updates[hMap['附件連結']] = fileUrl;
         }
       }
-
-      for (var col in updates) {
-        masterSheet.getRange(rowIndex, parseInt(col)).setValue(updates[col]);
-      }
+      for (var col in updates) masterSheet.getRange(rowIndex, parseInt(col)).setValue(updates[col]);
     }
 
-    var operator = formData.applicant || formData.managerSign || formData.bossSign || '系統';
-    logSheet.appendRow([
-      now,
-      caseId,
-      operator,
-      '變更至：' + (formData.nextStatus || ''),
-      formData.missingDocs || formData.executionResult || ''
-    ]);
-
+    logSheet.appendRow([now, caseId, formData.applicant || '系統', '變更至：' + formData.nextStatus, formData.missingDocs || '']);
     return { success: true, caseId: caseId };
-
-  } catch (e) {
-    throw e.toString();
-  }
+  } catch (e) { throw e.toString(); }
 }
+
 // ── 撤回送件 ───────────────────────────────────
 function recallCase(caseId) {
   try {
@@ -253,26 +206,51 @@ function recallCase(caseId) {
     var idIdx = headers.indexOf('案件編號');
     var statusIdx = headers.indexOf('目前狀態');
     var signIdx = headers.indexOf('主管確認簽署');
-    var updateIdx = headers.indexOf('最後更新時間');
 
     for (var i = 1; i < data.length; i++) {
       if (data[i][idIdx].toString().trim() === caseId) {
-        var currentStatus = data[i][statusIdx];
-        if (currentStatus === '待老闆同意' || currentStatus === '待人資再審') {
-          // 狀態退回，並清除主管的電子簽名
-          sheet.getRange(i + 1, statusIdx + 1).setValue('待主管確認');
-          if (signIdx !== -1) sheet.getRange(i + 1, signIdx + 1).setValue('');
-          if (updateIdx !== -1) sheet.getRange(i + 1, updateIdx + 1).setValue(new Date());
-
-          logSheet.appendRow([new Date(), caseId, '主管', '撤回送件', '重新編輯']);
-          return { success: true };
-        } else {
-          return { success: false, error: '案件目前狀態無法撤回' };
-        }
+        sheet.getRange(i + 1, statusIdx + 1).setValue('待主管確認');
+        if (signIdx !== -1) sheet.getRange(i + 1, signIdx + 1).setValue('');
+        logSheet.appendRow([new Date(), caseId, '主管', '撤回送件', '重新編輯']);
+        return { success: true };
       }
     }
     return { success: false, error: '找不到案件' };
-  } catch (e) {
-    return { success: false, error: e.toString() };
-  }
+  } catch (e) { return { success: false, error: e.toString() }; }
+}
+
+// ── 自動產生 PIP PDF (獨立函式，不可放在 recallCase 內) ───────────────────────
+function generatePipPdf(folder, pip, empName) {
+  var doc = DocumentApp.create('PIP_績效改善計畫_' + empName + '_' + Utilities.formatDate(new Date(), "GMT+8", "yyyyMMdd"));
+  var body = doc.getBody();
+  
+  body.appendParagraph("績效改善計畫 (PIP)").setHeading(DocumentApp.ParagraphHeading.HEADING1).setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+  body.appendParagraph("被資遣員工：" + empName);
+  body.appendParagraph("輔導期間：" + (pip.start || '未填') + " 至 " + (pip.end || '未填'));
+  body.appendHorizontalRule();
+  body.appendParagraph("【目前工作表現之具體問題】").setBold(true);
+  body.appendParagraph(pip.issue || "無");
+  body.appendParagraph("【預期改善目標與行動建議】").setBold(true);
+  body.appendParagraph(pip.target || "無");
+  body.appendParagraph("【公司提供之資源與協助】").setBold(true);
+  body.appendParagraph(pip.support || "無");
+  body.appendParagraph("\n\n主管簽署：____________________  日期：" + Utilities.formatDate(new Date(), "GMT+8", "yyyy/MM/dd"));
+
+  doc.saveAndClose();
+  var pdfBlob = doc.getAs('application/pdf');
+  var file = folder.createFile(pdfBlob);
+  
+  // 如果先前有存取遭拒的問題，下面這行建議拿掉或確保資料夾權限已開
+  // file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  
+  DriveApp.getFileById(doc.getId()).setTrashed(true);
+  return file.getUrl();
+}
+
+function authTrigger() { 
+  DriveApp.getFolderById(FOLDER_ID);
+  // 先建立文件
+  var tempDoc = DocumentApp.create('權限測試文件');
+  // 透過 DriveApp 取得該 ID 並丟進垃圾桶
+  DriveApp.getFileById(tempDoc.getId()).setTrashed(true);
 }
